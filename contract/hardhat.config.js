@@ -10,8 +10,9 @@ require("dotenv").config()
 const { networkConfig } = require("./helper-hardhat-config")
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY
-const SEPOLIA_RPC_URL =
-    process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/your-api-key"
+const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com"
+const MAINNET_RPC_URL =
+    process.env.MAINNET_RPC_URL || "https://eth-mainnet.g.alchemy.com/v2/api-key"
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || ""
 
@@ -30,6 +31,12 @@ module.exports = {
             url: SEPOLIA_RPC_URL,
             accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
             chainId: 11155111,
+            blockConfirmations: 6,
+        },
+        mainnet: {
+            url: MAINNET_RPC_URL,
+            accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+            chainId: 1,
             blockConfirmations: 6,
         },
     },
