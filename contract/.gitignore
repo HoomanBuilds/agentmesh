@@ -49,3 +49,6 @@ yarn-error.log*
 
 # Misc
 .prettierignore
+
+deployments/localhost/
+deployments/hardhat/

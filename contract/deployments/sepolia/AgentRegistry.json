@@ -1,0 +1,879 @@
+{
+  "address": "0xB55a7AC0dD6464599E2D6332CfBe5E721ff14b30",
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "AgentNotFound",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidPrice",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotAgentOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "OnlyRouter",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnableInvalidOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "OwnableUnauthorizedAccount",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "agentId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "pricePerCall",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "metadataURI",
+          "type": "string"
+        }
+      ],
+      "name": "AgentRegistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "agentId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newPrice",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "active",
+          "type": "bool"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "metadataURI",
+          "type": "string"
+        }
+      ],
+      "name": "AgentUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "agentCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "offset",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "limit",
+          "type": "uint256"
+        }
+      ],
+      "name": "getActiveAgents",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "agentIds",
+          "type": "uint256[]"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "pricePerCall",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "metadataURI",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "active",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalEarnings",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalJobs",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IAgentRegistry.Agent[]",
+          "name": "agents",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "agentId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getAgent",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "pricePerCall",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "metadataURI",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "active",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalEarnings",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalJobs",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IAgentRegistry.Agent",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "agentId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getAgentOwner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "agentId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getAgentPrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "offset",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "limit",
+          "type": "uint256"
+        }
+      ],
+      "name": "getAgents",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "pricePerCall",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "metadataURI",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "active",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalEarnings",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalJobs",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IAgentRegistry.Agent[]",
+          "name": "agents",
+          "type": "tuple[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "total",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "getAgentsByOwner",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getPlatformStats",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_agentCount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_totalEarnings",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_totalJobs",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "agentId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "earnings",
+          "type": "uint256"
+        }
+      ],
+      "name": "incrementAgentStats",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "agentId",
+          "type": "uint256"
+        }
+      ],
+      "name": "isAgentActive",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "pricePerCall",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "metadataURI",
+          "type": "string"
+        }
+      ],
+      "name": "registerAgent",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "agentId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "router",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_router",
+          "type": "address"
+        }
+      ],
+      "name": "setRouter",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalPlatformEarnings",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalPlatformJobs",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "agentId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "newPrice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "active",
+          "type": "bool"
+        },
+        {
+          "internalType": "string",
+          "name": "metadataURI",
+          "type": "string"
+        }
+      ],
+      "name": "updateAgent",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xb2c7fa0d12c17a9949a974dc833d3bde1f73ccbafa598e0af9c9c9b009449138",
+  "receipt": {
+    "to": null,
+    "from": "0x17A076d6cCaf37Bc9386EAB653A5EfAd8B07430C",
+    "contractAddress": "0xB55a7AC0dD6464599E2D6332CfBe5E721ff14b30",
+    "transactionIndex": 71,
+    "gasUsed": "1229422",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000020000000000040000000800000000000000000000000000000000400000000400000000000000000000000000000000000000000000000000000000000000000000000000000080000000000800000000000000000000000000000000000000000000000000000000020000000001000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xf90c7ce4b667834dd47d404d8f0c6a6213d1e0a302fe6b5343d67bec316c08e6",
+    "transactionHash": "0xb2c7fa0d12c17a9949a974dc833d3bde1f73ccbafa598e0af9c9c9b009449138",
+    "logs": [
+      {
+        "transactionIndex": 71,
+        "blockNumber": 9983688,
+        "transactionHash": "0xb2c7fa0d12c17a9949a974dc833d3bde1f73ccbafa598e0af9c9c9b009449138",
+        "address": "0xB55a7AC0dD6464599E2D6332CfBe5E721ff14b30",
+        "topics": [
+          "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x00000000000000000000000017a076d6ccaf37bc9386eab653a5efad8b07430c"
+        ],
+        "data": "0x",
+        "logIndex": 102,
+        "blockHash": "0xf90c7ce4b667834dd47d404d8f0c6a6213d1e0a302fe6b5343d67bec316c08e6"
+      }
+    ],
+    "blockNumber": 9983688,
+    "cumulativeGasUsed": "14521461",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "a74805a8d96f85b25e8283ef2000433d",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.20+commit.a1b79de6\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AgentNotFound\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidPrice\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotAgentOwner\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OnlyRouter\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"OwnableInvalidOwner\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"OwnableUnauthorizedAccount\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"agentId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"pricePerCall\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"metadataURI\",\"type\":\"string\"}],\"name\":\"AgentRegistered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"agentId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"newPrice\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"active\",\"type\":\"bool\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"metadataURI\",\"type\":\"string\"}],\"name\":\"AgentUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"agentCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"limit\",\"type\":\"uint256\"}],\"name\":\"getActiveAgents\",\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"agentIds\",\"type\":\"uint256[]\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"pricePerCall\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"metadataURI\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"active\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"totalEarnings\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalJobs\",\"type\":\"uint256\"}],\"internalType\":\"struct IAgentRegistry.Agent[]\",\"name\":\"agents\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"agentId\",\"type\":\"uint256\"}],\"name\":\"getAgent\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"pricePerCall\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"metadataURI\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"active\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"totalEarnings\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalJobs\",\"type\":\"uint256\"}],\"internalType\":\"struct IAgentRegistry.Agent\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"agentId\",\"type\":\"uint256\"}],\"name\":\"getAgentOwner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"agentId\",\"type\":\"uint256\"}],\"name\":\"getAgentPrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"limit\",\"type\":\"uint256\"}],\"name\":\"getAgents\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"pricePerCall\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"metadataURI\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"active\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"totalEarnings\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalJobs\",\"type\":\"uint256\"}],\"internalType\":\"struct IAgentRegistry.Agent[]\",\"name\":\"agents\",\"type\":\"tuple[]\"},{\"internalType\":\"uint256\",\"name\":\"total\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"getAgentsByOwner\",\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPlatformStats\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_agentCount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_totalEarnings\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_totalJobs\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"agentId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"earnings\",\"type\":\"uint256\"}],\"name\":\"incrementAgentStats\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"agentId\",\"type\":\"uint256\"}],\"name\":\"isAgentActive\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"pricePerCall\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"metadataURI\",\"type\":\"string\"}],\"name\":\"registerAgent\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"agentId\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"router\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_router\",\"type\":\"address\"}],\"name\":\"setRouter\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalPlatformEarnings\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalPlatformJobs\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"agentId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"newPrice\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"active\",\"type\":\"bool\"},{\"internalType\":\"string\",\"name\":\"metadataURI\",\"type\":\"string\"}],\"name\":\"updateAgent\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"Anyone can register an agent, set pricing, and manage lifecycle\",\"errors\":{\"OwnableInvalidOwner(address)\":[{\"details\":\"The owner is not a valid owner account. (eg. `address(0)`)\"}],\"OwnableUnauthorizedAccount(address)\":[{\"details\":\"The caller account is not authorized to perform an operation.\"}]},\"kind\":\"dev\",\"methods\":{\"getActiveAgents(uint256,uint256)\":{\"params\":{\"limit\":\"Maximum number of agents to return\",\"offset\":\"Starting index\"},\"returns\":{\"agentIds\":\"Array of active agent IDs\",\"agents\":\"Array of active Agent structs\"}},\"getAgents(uint256,uint256)\":{\"params\":{\"limit\":\"Maximum number of agents to return\",\"offset\":\"Starting index\"},\"returns\":{\"agents\":\"Array of Agent structs\",\"total\":\"Total number of agents\"}},\"getPlatformStats()\":{\"returns\":{\"_agentCount\":\"Total registered agents\",\"_totalEarnings\":\"Total MNEE earned across all agents\",\"_totalJobs\":\"Total jobs completed\"}},\"incrementAgentStats(uint256,uint256)\":{\"params\":{\"agentId\":\"ID of the agent\",\"earnings\":\"Amount earned\"}},\"owner()\":{\"details\":\"Returns the address of the current owner.\"},\"registerAgent(uint256,string)\":{\"params\":{\"metadataURI\":\"URI pointing to agent metadata JSON\",\"pricePerCall\":\"Price per service call in MNEE (wei)\"},\"returns\":{\"agentId\":\"The ID of the newly registered agent\"}},\"renounceOwnership()\":{\"details\":\"Leaves the contract without owner. It will not be possible to call `onlyOwner` functions. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby disabling any functionality that is only available to the owner.\"},\"setRouter(address)\":{\"params\":{\"_router\":\"Address of the AgentRouter contract\"}},\"transferOwnership(address)\":{\"details\":\"Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.\"},\"updateAgent(uint256,uint256,bool,string)\":{\"params\":{\"active\":\"Whether agent is accepting jobs\",\"agentId\":\"ID of the agent to update\",\"metadataURI\":\"New metadata URI (empty to keep unchanged)\",\"newPrice\":\"New price per call (0 to keep unchanged)\"}}},\"title\":\"AgentRegistry\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"getActiveAgents(uint256,uint256)\":{\"notice\":\"Get all active agents (for discovery)\"},\"getAgents(uint256,uint256)\":{\"notice\":\"Get agents with pagination\"},\"getPlatformStats()\":{\"notice\":\"Get platform-wide statistics\"},\"incrementAgentStats(uint256,uint256)\":{\"notice\":\"Increment agent stats after job completion (called by Router)\"},\"registerAgent(uint256,string)\":{\"notice\":\"Register a new agent\"},\"setRouter(address)\":{\"notice\":\"Set the router address (can only be set once or by owner)\"},\"updateAgent(uint256,uint256,bool,string)\":{\"notice\":\"Update an existing agent\"}},\"notice\":\"Permissionless registry for AI agents\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/AgentRegistry.sol\":\"AgentRegistry\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts/access/Ownable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v5.0.0) (access/Ownable.sol)\\n\\npragma solidity ^0.8.20;\\n\\nimport {Context} from \\\"../utils/Context.sol\\\";\\n\\n/**\\n * @dev Contract module which provides a basic access control mechanism, where\\n * there is an account (an owner) that can be granted exclusive access to\\n * specific functions.\\n *\\n * The initial owner is set to the address provided by the deployer. This can\\n * later be changed with {transferOwnership}.\\n *\\n * This module is used through inheritance. It will make available the modifier\\n * `onlyOwner`, which can be applied to your functions to restrict their use to\\n * the owner.\\n */\\nabstract contract Ownable is Context {\\n    address private _owner;\\n\\n    /**\\n     * @dev The caller account is not authorized to perform an operation.\\n     */\\n    error OwnableUnauthorizedAccount(address account);\\n\\n    /**\\n     * @dev The owner is not a valid owner account. (eg. `address(0)`)\\n     */\\n    error OwnableInvalidOwner(address owner);\\n\\n    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);\\n\\n    /**\\n     * @dev Initializes the contract setting the address provided by the deployer as the initial owner.\\n     */\\n    constructor(address initialOwner) {\\n        if (initialOwner == address(0)) {\\n            revert OwnableInvalidOwner(address(0));\\n        }\\n        _transferOwnership(initialOwner);\\n    }\\n\\n    /**\\n     * @dev Throws if called by any account other than the owner.\\n     */\\n    modifier onlyOwner() {\\n        _checkOwner();\\n        _;\\n    }\\n\\n    /**\\n     * @dev Returns the address of the current owner.\\n     */\\n    function owner() public view virtual returns (address) {\\n        return _owner;\\n    }\\n\\n    /**\\n     * @dev Throws if the sender is not the owner.\\n     */\\n    function _checkOwner() internal view virtual {\\n        if (owner() != _msgSender()) {\\n            revert OwnableUnauthorizedAccount(_msgSender());\\n        }\\n    }\\n\\n    /**\\n     * @dev Leaves the contract without owner. It will not be possible to call\\n     * `onlyOwner` functions. Can only be called by the current owner.\\n     *\\n     * NOTE: Renouncing ownership will leave the contract without an owner,\\n     * thereby disabling any functionality that is only available to the owner.\\n     */\\n    function renounceOwnership() public virtual onlyOwner {\\n        _transferOwnership(address(0));\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Can only be called by the current owner.\\n     */\\n    function transferOwnership(address newOwner) public virtual onlyOwner {\\n        if (newOwner == address(0)) {\\n            revert OwnableInvalidOwner(address(0));\\n        }\\n        _transferOwnership(newOwner);\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Internal function without access restriction.\\n     */\\n    function _transferOwnership(address newOwner) internal virtual {\\n        address oldOwner = _owner;\\n        _owner = newOwner;\\n        emit OwnershipTransferred(oldOwner, newOwner);\\n    }\\n}\\n\",\"keccak256\":\"0xff6d0bb2e285473e5311d9d3caacb525ae3538a80758c10649a4d61029b017bb\",\"license\":\"MIT\"},\"@openzeppelin/contracts/utils/Context.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v5.0.1) (utils/Context.sol)\\n\\npragma solidity ^0.8.20;\\n\\n/**\\n * @dev Provides information about the current execution context, including the\\n * sender of the transaction and its data. While these are generally available\\n * via msg.sender and msg.data, they should not be accessed in such a direct\\n * manner, since when dealing with meta-transactions the account sending and\\n * paying for execution may not be the actual sender (as far as an application\\n * is concerned).\\n *\\n * This contract is only required for intermediate, library-like contracts.\\n */\\nabstract contract Context {\\n    function _msgSender() internal view virtual returns (address) {\\n        return msg.sender;\\n    }\\n\\n    function _msgData() internal view virtual returns (bytes calldata) {\\n        return msg.data;\\n    }\\n\\n    function _contextSuffixLength() internal view virtual returns (uint256) {\\n        return 0;\\n    }\\n}\\n\",\"keccak256\":\"0x493033a8d1b176a037b2cc6a04dad01a5c157722049bbecf632ca876224dd4b2\",\"license\":\"MIT\"},\"contracts/AgentRegistry.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.20;\\n\\nimport \\\"@openzeppelin/contracts/access/Ownable.sol\\\";\\nimport \\\"./interfaces/IAgentRegistry.sol\\\";\\n\\n/**\\n * @title AgentRegistry\\n * @notice Permissionless registry for AI agents\\n * @dev Anyone can register an agent, set pricing, and manage lifecycle\\n */\\ncontract AgentRegistry is IAgentRegistry, Ownable {\\n    // ============ State Variables ============\\n\\n    uint256 public agentCount;\\n    address public router;\\n    \\n    // Global stats\\n    uint256 public totalPlatformEarnings;\\n    uint256 public totalPlatformJobs;\\n\\n    // ============ Mappings ============\\n\\n    mapping(uint256 => Agent) private _agents;\\n    mapping(address => uint256[]) private _ownerAgents;\\n\\n    // ============ Errors ============\\n\\n    error AgentNotFound();\\n    error NotAgentOwner();\\n    error InvalidPrice();\\n    error OnlyRouter();\\n\\n    // ============ Modifiers ============\\n\\n    modifier onlyRouter() {\\n        if (msg.sender != router) revert OnlyRouter();\\n        _;\\n    }\\n\\n    // ============ Constructor ============\\n\\n    constructor() Ownable(msg.sender) {}\\n\\n    // ============ Admin Functions ============\\n\\n    /**\\n     * @notice Set the router address (can only be set once or by owner)\\n     * @param _router Address of the AgentRouter contract\\n     */\\n    function setRouter(address _router) external onlyOwner {\\n        router = _router;\\n    }\\n\\n    // ============ Agent Management ============\\n\\n    /**\\n     * @notice Register a new agent\\n     * @param pricePerCall Price per service call in MNEE (wei)\\n     * @param metadataURI URI pointing to agent metadata JSON\\n     * @return agentId The ID of the newly registered agent\\n     */\\n    function registerAgent(\\n        uint256 pricePerCall,\\n        string calldata metadataURI\\n    ) external returns (uint256 agentId) {\\n        if (pricePerCall == 0) revert InvalidPrice();\\n\\n        agentId = agentCount++;\\n\\n        _agents[agentId] = Agent({\\n            owner: msg.sender,\\n            pricePerCall: pricePerCall,\\n            metadataURI: metadataURI,\\n            active: true,\\n            totalEarnings: 0,\\n            totalJobs: 0\\n        });\\n\\n        _ownerAgents[msg.sender].push(agentId);\\n\\n        emit AgentRegistered(agentId, msg.sender, pricePerCall, metadataURI);\\n    }\\n\\n    /**\\n     * @notice Update an existing agent\\n     * @param agentId ID of the agent to update\\n     * @param newPrice New price per call (0 to keep unchanged)\\n     * @param active Whether agent is accepting jobs\\n     * @param metadataURI New metadata URI (empty to keep unchanged)\\n     */\\n    function updateAgent(\\n        uint256 agentId,\\n        uint256 newPrice,\\n        bool active,\\n        string calldata metadataURI\\n    ) external {\\n        Agent storage agent = _agents[agentId];\\n        if (agent.owner == address(0)) revert AgentNotFound();\\n        if (agent.owner != msg.sender) revert NotAgentOwner();\\n\\n        if (newPrice > 0) {\\n            agent.pricePerCall = newPrice;\\n        }\\n        agent.active = active;\\n\\n        if (bytes(metadataURI).length > 0) {\\n            agent.metadataURI = metadataURI;\\n        }\\n\\n        emit AgentUpdated(agentId, agent.pricePerCall, active, agent.metadataURI);\\n    }\\n\\n    /**\\n     * @notice Increment agent stats after job completion (called by Router)\\n     * @param agentId ID of the agent\\n     * @param earnings Amount earned\\n     */\\n    function incrementAgentStats(\\n        uint256 agentId,\\n        uint256 earnings\\n    ) external onlyRouter {\\n        Agent storage agent = _agents[agentId];\\n        agent.totalEarnings += earnings;\\n        agent.totalJobs++;\\n        \\n        // Update global stats\\n        totalPlatformEarnings += earnings;\\n        totalPlatformJobs++;\\n    }\\n\\n    // ============ View Functions ============\\n\\n    function getAgent(uint256 agentId) external view returns (Agent memory) {\\n        return _agents[agentId];\\n    }\\n\\n    function getAgentOwner(uint256 agentId) external view returns (address) {\\n        return _agents[agentId].owner;\\n    }\\n\\n    function getAgentPrice(uint256 agentId) external view returns (uint256) {\\n        return _agents[agentId].pricePerCall;\\n    }\\n\\n    function isAgentActive(uint256 agentId) external view returns (bool) {\\n        return _agents[agentId].active && _agents[agentId].owner != address(0);\\n    }\\n\\n    function getAgentsByOwner(address owner) external view returns (uint256[] memory) {\\n        return _ownerAgents[owner];\\n    }\\n\\n    /**\\n     * @notice Get agents with pagination\\n     * @param offset Starting index\\n     * @param limit Maximum number of agents to return\\n     * @return agents Array of Agent structs\\n     * @return total Total number of agents\\n     */\\n    function getAgents(\\n        uint256 offset,\\n        uint256 limit\\n    ) external view returns (Agent[] memory agents, uint256 total) {\\n        total = agentCount;\\n        \\n        if (offset >= total) {\\n            return (new Agent[](0), total);\\n        }\\n        \\n        uint256 end = offset + limit;\\n        if (end > total) {\\n            end = total;\\n        }\\n        \\n        uint256 length = end - offset;\\n        agents = new Agent[](length);\\n        \\n        for (uint256 i = 0; i < length; i++) {\\n            agents[i] = _agents[offset + i];\\n        }\\n    }\\n\\n    /**\\n     * @notice Get all active agents (for discovery)\\n     * @param offset Starting index\\n     * @param limit Maximum number of agents to return\\n     * @return agentIds Array of active agent IDs\\n     * @return agents Array of active Agent structs\\n     */\\n    function getActiveAgents(\\n        uint256 offset,\\n        uint256 limit\\n    ) external view returns (uint256[] memory agentIds, Agent[] memory agents) {\\n        // First pass: count active agents\\n        uint256 activeCount = 0;\\n        for (uint256 i = 0; i < agentCount; i++) {\\n            if (_agents[i].active && _agents[i].owner != address(0)) {\\n                activeCount++;\\n            }\\n        }\\n        \\n        if (offset >= activeCount) {\\n            return (new uint256[](0), new Agent[](0));\\n        }\\n        \\n        uint256 end = offset + limit;\\n        if (end > activeCount) {\\n            end = activeCount;\\n        }\\n        \\n        uint256 length = end - offset;\\n        agentIds = new uint256[](length);\\n        agents = new Agent[](length);\\n        \\n        // Second pass: collect active agents\\n        uint256 found = 0;\\n        uint256 collected = 0;\\n        for (uint256 i = 0; i < agentCount && collected < length; i++) {\\n            if (_agents[i].active && _agents[i].owner != address(0)) {\\n                if (found >= offset) {\\n                    agentIds[collected] = i;\\n                    agents[collected] = _agents[i];\\n                    collected++;\\n                }\\n                found++;\\n            }\\n        }\\n    }\\n\\n    /**\\n     * @notice Get platform-wide statistics\\n     * @return _agentCount Total registered agents\\n     * @return _totalEarnings Total MNEE earned across all agents\\n     * @return _totalJobs Total jobs completed\\n     */\\n    function getPlatformStats() external view returns (\\n        uint256 _agentCount,\\n        uint256 _totalEarnings,\\n        uint256 _totalJobs\\n    ) {\\n        return (agentCount, totalPlatformEarnings, totalPlatformJobs);\\n    }\\n}\\n\",\"keccak256\":\"0x0bee9e6fcba88f0a474aff7ec84e4792f3125c7e6b09e501c5d9d37785e4ed23\",\"license\":\"MIT\"},\"contracts/interfaces/IAgentRegistry.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.20;\\n\\n/**\\n * @title IAgentRegistry\\n * @notice Interface for the Agent Registry contract\\n */\\ninterface IAgentRegistry {\\n    struct Agent {\\n        address owner;\\n        uint256 pricePerCall;\\n        string metadataURI;\\n        bool active;\\n        uint256 totalEarnings;\\n        uint256 totalJobs;\\n    }\\n\\n    event AgentRegistered(\\n        uint256 indexed agentId,\\n        address indexed owner,\\n        uint256 pricePerCall,\\n        string metadataURI\\n    );\\n\\n    event AgentUpdated(\\n        uint256 indexed agentId,\\n        uint256 newPrice,\\n        bool active,\\n        string metadataURI\\n    );\\n\\n    function registerAgent(\\n        uint256 pricePerCall,\\n        string calldata metadataURI\\n    ) external returns (uint256 agentId);\\n\\n    function updateAgent(\\n        uint256 agentId,\\n        uint256 newPrice,\\n        bool active,\\n        string calldata metadataURI\\n    ) external;\\n\\n    function incrementAgentStats(\\n        uint256 agentId,\\n        uint256 earnings\\n    ) external;\\n\\n    function getAgent(uint256 agentId) external view returns (Agent memory);\\n    function getAgentOwner(uint256 agentId) external view returns (address);\\n    function getAgentPrice(uint256 agentId) external view returns (uint256);\\n    function isAgentActive(uint256 agentId) external view returns (bool);\\n    function agentCount() external view returns (uint256);\\n    function getAgentsByOwner(address owner) external view returns (uint256[] memory);\\n    function getPlatformStats() external view returns (\\n        uint256 _agentCount,\\n        uint256 _totalEarnings,\\n        uint256 _totalJobs\\n    );\\n}\\n\",\"keccak256\":\"0xf9b667183f98dfb9b2d34d4a56788940770fc288078e6d04644a8a2ef0c61368\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50338061003757604051631e4fbdf760e01b81526000600482015260240160405180910390fd5b61004081610046565b50610096565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6114cd806100a56000396000f3fe608060405234801561001057600080fd5b50600436106101215760003560e01c806393581fa4116100ad578063bfa4c5c111610071578063bfa4c5c1146102b9578063c0d78655146102c2578063ef389d1f146102d5578063f2fde38b146102e8578063f887ea40146102fb57600080fd5b806393581fa41461024a578063a68dd9c81461025d578063a8e5b4d914610286578063b7dc12841461028f578063be5d5d9b1461029857600080fd5b80632de5aaf7116100f45780632de5aaf7146101a9578063392d2d8e146101c95780635f5e6bc2146101ec578063715018a61461021d5780638da5cb5b1461022557600080fd5b80630726196014610126578063136d8883146101505780631ab6f888146101745780631ecdadd314610194575b600080fd5b610139610134366004610e37565b61030e565b604051610147929190610f7e565b60405180910390f35b60015460035460045460408051938452602084019290925290820152606001610147565b610187610182366004610fac565b61064e565b6040516101479190610fdc565b6101a76101a2366004610e37565b6106ba565b005b6101bc6101b7366004610fef565b610755565b6040516101479190611008565b6101dc6101d7366004610fef565b610853565b6040519015158152602001610147565b61020f6101fa366004610fef565b60009081526005602052604090206001015490565b604051908152602001610147565b6101a7610890565b6000546001600160a01b03165b6040516001600160a01b039091168152602001610147565b6101a761025836600461105d565b6108a4565b61023261026b366004610fef565b6000908152600560205260409020546001600160a01b031690565b61020f60045481565b61020f60015481565b6102ab6102a6366004610e37565b610984565b6040516101479291906110cc565b61020f60035481565b6101a76102d0366004610fac565b610b89565b61020f6102e33660046110ee565b610bb3565b6101a76102f6366004610fac565b610d36565b600254610232906001600160a01b031681565b6060806000805b60015481101561037b5760008181526005602052604090206003015460ff16801561035657506000818152600560205260409020546001600160a01b031615155b15610369578161036581611150565b9250505b8061037381611150565b915050610315565b508085106103c757604080516000808252602082018181528284019093529091906103bc565b6103a9610df6565b8152602001906001900390816103a15790505b509250925050610647565b60006103d3858761117f565b9050818111156103e05750805b60006103ec8783611192565b90508067ffffffffffffffff81111561040757610407611169565b604051908082528060200260200182016040528015610430578160200160208202803683370190505b5094508067ffffffffffffffff81111561044c5761044c611169565b60405190808252806020026020018201604052801561048557816020015b610472610df6565b81526020019060019003908161046a5790505b50935060008060005b6001548110801561049e57508382105b156106405760008181526005602052604090206003015460ff1680156104da57506000818152600560205260409020546001600160a01b031615155b1561062e5789831061062057808883815181106104f9576104f96111a5565b602090810291909101810191909152600082815260058252604090819020815160c08101835281546001600160a01b03168152600182015493810193909352600281018054919284019161054c906111bb565b80601f0160208091040260200160405190810160405280929190818152602001828054610578906111bb565b80156105c55780601f1061059a576101008083540402835291602001916105c5565b820191906000526020600020905b8154815290600101906020018083116105a857829003601f168201915b5050509183525050600382015460ff1615156020820152600482015460408201526005909101546060909101528751889084908110610606576106066111a5565b6020026020010181905250818061061c90611150565b9250505b8261062a81611150565b9350505b8061063881611150565b91505061048e565b5050505050505b9250929050565b6001600160a01b0381166000908152600660209081526040918290208054835181840281018401909452808452606093928301828280156106ae57602002820191906000526020600020905b81548152602001906001019080831161069a575b50505050509050919050565b6002546001600160a01b031633146106e557604051639e41bdd760e01b815260040160405180910390fd5b60008281526005602052604081206004810180549192849261070890849061117f565b909155505060058101805490600061071f83611150565b91905055508160036000828254610736919061117f565b90915550506004805490600061074b83611150565b9190505550505050565b61075d610df6565b600082815260056020908152604091829020825160c08101845281546001600160a01b0316815260018201549281019290925260028101805492939192918401916107a7906111bb565b80601f01602080910402602001604051908101604052809291908181526020018280546107d3906111bb565b80156108205780601f106107f557610100808354040283529160200191610820565b820191906000526020600020905b81548152906001019060200180831161080357829003601f168201915b5050509183525050600382015460ff16151560208201526004820154604082015260059091015460609091015292915050565b60008181526005602052604081206003015460ff16801561088a57506000828152600560205260409020546001600160a01b031615155b92915050565b610898610d79565b6108a26000610da6565b565b600085815260056020526040902080546001600160a01b03166108da5760405163e93ba22360e01b815260040160405180910390fd5b80546001600160a01b0316331461090457604051630e41dcbf60e21b815260040160405180910390fd5b841561091257600181018590555b60038101805460ff191685151517905581156109395760028101610937838583611244565b505b857f0d3f97502010854f5e8f82e460b5e80c6927636a9ff5854f35b8e1e84b222da98260010154868460020160405161097493929190611305565b60405180910390a2505050505050565b6001546060908084106109ca5760408051600080825260208201909252906109c2565b6109af610df6565b8152602001906001900390816109a75790505b509150610647565b60006109d6848661117f565b9050818111156109e35750805b60006109ef8683611192565b90508067ffffffffffffffff811115610a0a57610a0a611169565b604051908082528060200260200182016040528015610a4357816020015b610a30610df6565b815260200190600190039081610a285790505b50935060005b81811015610b7f5760056000610a5f838a61117f565b81526020808201929092526040908101600020815160c08101835281546001600160a01b031681526001820154938101939093526002810180549192840191610aa7906111bb565b80601f0160208091040260200160405190810160405280929190818152602001828054610ad3906111bb565b8015610b205780601f10610af557610100808354040283529160200191610b20565b820191906000526020600020905b815481529060010190602001808311610b0357829003601f168201915b5050509183525050600382015460ff1615156020820152600482015460408201526005909101546060909101528551869083908110610b6157610b616111a5565b60200260200101819052508080610b7790611150565b915050610a49565b5050509250929050565b610b91610d79565b600280546001600160a01b0319166001600160a01b0392909216919091179055565b600083600003610bd55760405162bfc92160e01b815260040160405180910390fd5b60018054906000610be583611150565b9190505590506040518060c00160405280336001600160a01b0316815260200185815260200184848080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920182905250938552505060016020808501829052604080860185905260609095018490528684526005815292849020855181546001600160a01b0319166001600160a01b03909116178155928501519083015550908201516002820190610c9f90826113a1565b50606082015160038201805460ff19169115159190911790556080820151600482015560a090910151600590910155336000818152600660209081526040808320805460018101825590845291909220018390555182907fcbb96f51f0d44aad38bd37e9959154a2f979b86301a6efbcb08d83f10ac9c82090610d2790889088908890611461565b60405180910390a39392505050565b610d3e610d79565b6001600160a01b038116610d6d57604051631e4fbdf760e01b8152600060048201526024015b60405180910390fd5b610d7681610da6565b50565b6000546001600160a01b031633146108a25760405163118cdaa760e01b8152336004820152602401610d64565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6040518060c0016040528060006001600160a01b03168152602001600081526020016060815260200160001515815260200160008152602001600081525090565b60008060408385031215610e4a57600080fd5b50508035926020909101359150565b600081518084526020808501945080840160005b83811015610e8957815187529582019590820190600101610e6d565b509495945050505050565b60018060a01b038151168252600060208083015181850152604083015160c0604086015280518060c087015260005b81811015610edf5782810184015187820160e001528301610ec3565b50600060e0828801015260608501519250610efe606087018415159052565b6080858101519087015260a09485015194860194909452505050601f01601f19160160e00190565b600082825180855260208086019550808260051b84010181860160005b84811015610f7157601f19868403018952610f5f838351610e94565b98840198925090830190600101610f43565b5090979650505050505050565b604081526000610f916040830185610e59565b8281036020840152610fa38185610f26565b95945050505050565b600060208284031215610fbe57600080fd5b81356001600160a01b0381168114610fd557600080fd5b9392505050565b602081526000610fd56020830184610e59565b60006020828403121561100157600080fd5b5035919050565b602081526000610fd56020830184610e94565b60008083601f84011261102d57600080fd5b50813567ffffffffffffffff81111561104557600080fd5b60208301915083602082850101111561064757600080fd5b60008060008060006080868803121561107557600080fd5b85359450602086013593506040860135801515811461109357600080fd5b9250606086013567ffffffffffffffff8111156110af57600080fd5b6110bb8882890161101b565b969995985093965092949392505050565b6040815260006110df6040830185610f26565b90508260208301529392505050565b60008060006040848603121561110357600080fd5b83359250602084013567ffffffffffffffff81111561112157600080fd5b61112d8682870161101b565b9497909650939450505050565b634e487b7160e01b600052601160045260246000fd5b6000600182016111625761116261113a565b5060010190565b634e487b7160e01b600052604160045260246000fd5b8082018082111561088a5761088a61113a565b8181038181111561088a5761088a61113a565b634e487b7160e01b600052603260045260246000fd5b600181811c908216806111cf57607f821691505b6020821081036111ef57634e487b7160e01b600052602260045260246000fd5b50919050565b601f82111561123f57600081815260208120601f850160051c8101602086101561121c5750805b601f850160051c820191505b8181101561123b57828155600101611228565b5050505b505050565b67ffffffffffffffff83111561125c5761125c611169565b6112708361126a83546111bb565b836111f5565b6000601f8411600181146112a4576000851561128c5750838201355b600019600387901b1c1916600186901b1783556112fe565b600083815260209020601f19861690835b828110156112d557868501358255602094850194600190920191016112b5565b50868210156112f25760001960f88860031b161c19848701351681555b505060018560011b0183555b5050505050565b83815260006020841515818401526060604084015260008454611327816111bb565b8060608701526080600180841660008114611349576001811461136357611391565b60ff1985168984015283151560051b890183019550611391565b896000528660002060005b858110156113895781548b820186015290830190880161136e565b8a0184019650505b50939a9950505050505050505050565b815167ffffffffffffffff8111156113bb576113bb611169565b6113cf816113c984546111bb565b846111f5565b602080601f83116001811461140457600084156113ec5750858301515b600019600386901b1c1916600185901b17855561123b565b600085815260208120601f198616915b8281101561143357888601518255948401946001909101908401611414565b50858210156114515787850151600019600388901b60f8161c191681555b5050505050600190811b01905550565b83815260406020820152816040820152818360608301376000818301606090810191909152601f909201601f191601019291505056fea2646970667358221220fcdcc692a1636bedf859e748c889ced39eb2344f2e898f9516b5b436c4ff640d64736f6c63430008140033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106101215760003560e01c806393581fa4116100ad578063bfa4c5c111610071578063bfa4c5c1146102b9578063c0d78655146102c2578063ef389d1f146102d5578063f2fde38b146102e8578063f887ea40146102fb57600080fd5b806393581fa41461024a578063a68dd9c81461025d578063a8e5b4d914610286578063b7dc12841461028f578063be5d5d9b1461029857600080fd5b80632de5aaf7116100f45780632de5aaf7146101a9578063392d2d8e146101c95780635f5e6bc2146101ec578063715018a61461021d5780638da5cb5b1461022557600080fd5b80630726196014610126578063136d8883146101505780631ab6f888146101745780631ecdadd314610194575b600080fd5b610139610134366004610e37565b61030e565b604051610147929190610f7e565b60405180910390f35b60015460035460045460408051938452602084019290925290820152606001610147565b610187610182366004610fac565b61064e565b6040516101479190610fdc565b6101a76101a2366004610e37565b6106ba565b005b6101bc6101b7366004610fef565b610755565b6040516101479190611008565b6101dc6101d7366004610fef565b610853565b6040519015158152602001610147565b61020f6101fa366004610fef565b60009081526005602052604090206001015490565b604051908152602001610147565b6101a7610890565b6000546001600160a01b03165b6040516001600160a01b039091168152602001610147565b6101a761025836600461105d565b6108a4565b61023261026b366004610fef565b6000908152600560205260409020546001600160a01b031690565b61020f60045481565b61020f60015481565b6102ab6102a6366004610e37565b610984565b6040516101479291906110cc565b61020f60035481565b6101a76102d0366004610fac565b610b89565b61020f6102e33660046110ee565b610bb3565b6101a76102f6366004610fac565b610d36565b600254610232906001600160a01b031681565b6060806000805b60015481101561037b5760008181526005602052604090206003015460ff16801561035657506000818152600560205260409020546001600160a01b031615155b15610369578161036581611150565b9250505b8061037381611150565b915050610315565b508085106103c757604080516000808252602082018181528284019093529091906103bc565b6103a9610df6565b8152602001906001900390816103a15790505b509250925050610647565b60006103d3858761117f565b9050818111156103e05750805b60006103ec8783611192565b90508067ffffffffffffffff81111561040757610407611169565b604051908082528060200260200182016040528015610430578160200160208202803683370190505b5094508067ffffffffffffffff81111561044c5761044c611169565b60405190808252806020026020018201604052801561048557816020015b610472610df6565b81526020019060019003908161046a5790505b50935060008060005b6001548110801561049e57508382105b156106405760008181526005602052604090206003015460ff1680156104da57506000818152600560205260409020546001600160a01b031615155b1561062e5789831061062057808883815181106104f9576104f96111a5565b602090810291909101810191909152600082815260058252604090819020815160c08101835281546001600160a01b03168152600182015493810193909352600281018054919284019161054c906111bb565b80601f0160208091040260200160405190810160405280929190818152602001828054610578906111bb565b80156105c55780601f1061059a576101008083540402835291602001916105c5565b820191906000526020600020905b8154815290600101906020018083116105a857829003601f168201915b5050509183525050600382015460ff1615156020820152600482015460408201526005909101546060909101528751889084908110610606576106066111a5565b6020026020010181905250818061061c90611150565b9250505b8261062a81611150565b9350505b8061063881611150565b91505061048e565b5050505050505b9250929050565b6001600160a01b0381166000908152600660209081526040918290208054835181840281018401909452808452606093928301828280156106ae57602002820191906000526020600020905b81548152602001906001019080831161069a575b50505050509050919050565b6002546001600160a01b031633146106e557604051639e41bdd760e01b815260040160405180910390fd5b60008281526005602052604081206004810180549192849261070890849061117f565b909155505060058101805490600061071f83611150565b91905055508160036000828254610736919061117f565b90915550506004805490600061074b83611150565b9190505550505050565b61075d610df6565b600082815260056020908152604091829020825160c08101845281546001600160a01b0316815260018201549281019290925260028101805492939192918401916107a7906111bb565b80601f01602080910402602001604051908101604052809291908181526020018280546107d3906111bb565b80156108205780601f106107f557610100808354040283529160200191610820565b820191906000526020600020905b81548152906001019060200180831161080357829003601f168201915b5050509183525050600382015460ff16151560208201526004820154604082015260059091015460609091015292915050565b60008181526005602052604081206003015460ff16801561088a57506000828152600560205260409020546001600160a01b031615155b92915050565b610898610d79565b6108a26000610da6565b565b600085815260056020526040902080546001600160a01b03166108da5760405163e93ba22360e01b815260040160405180910390fd5b80546001600160a01b0316331461090457604051630e41dcbf60e21b815260040160405180910390fd5b841561091257600181018590555b60038101805460ff191685151517905581156109395760028101610937838583611244565b505b857f0d3f97502010854f5e8f82e460b5e80c6927636a9ff5854f35b8e1e84b222da98260010154868460020160405161097493929190611305565b60405180910390a2505050505050565b6001546060908084106109ca5760408051600080825260208201909252906109c2565b6109af610df6565b8152602001906001900390816109a75790505b509150610647565b60006109d6848661117f565b9050818111156109e35750805b60006109ef8683611192565b90508067ffffffffffffffff811115610a0a57610a0a611169565b604051908082528060200260200182016040528015610a4357816020015b610a30610df6565b815260200190600190039081610a285790505b50935060005b81811015610b7f5760056000610a5f838a61117f565b81526020808201929092526040908101600020815160c08101835281546001600160a01b031681526001820154938101939093526002810180549192840191610aa7906111bb565b80601f0160208091040260200160405190810160405280929190818152602001828054610ad3906111bb565b8015610b205780601f10610af557610100808354040283529160200191610b20565b820191906000526020600020905b815481529060010190602001808311610b0357829003601f168201915b5050509183525050600382015460ff1615156020820152600482015460408201526005909101546060909101528551869083908110610b6157610b616111a5565b60200260200101819052508080610b7790611150565b915050610a49565b5050509250929050565b610b91610d79565b600280546001600160a01b0319166001600160a01b0392909216919091179055565b600083600003610bd55760405162bfc92160e01b815260040160405180910390fd5b60018054906000610be583611150565b9190505590506040518060c00160405280336001600160a01b0316815260200185815260200184848080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920182905250938552505060016020808501829052604080860185905260609095018490528684526005815292849020855181546001600160a01b0319166001600160a01b03909116178155928501519083015550908201516002820190610c9f90826113a1565b50606082015160038201805460ff19169115159190911790556080820151600482015560a090910151600590910155336000818152600660209081526040808320805460018101825590845291909220018390555182907fcbb96f51f0d44aad38bd37e9959154a2f979b86301a6efbcb08d83f10ac9c82090610d2790889088908890611461565b60405180910390a39392505050565b610d3e610d79565b6001600160a01b038116610d6d57604051631e4fbdf760e01b8152600060048201526024015b60405180910390fd5b610d7681610da6565b50565b6000546001600160a01b031633146108a25760405163118cdaa760e01b8152336004820152602401610d64565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6040518060c0016040528060006001600160a01b03168152602001600081526020016060815260200160001515815260200160008152602001600081525090565b60008060408385031215610e4a57600080fd5b50508035926020909101359150565b600081518084526020808501945080840160005b83811015610e8957815187529582019590820190600101610e6d565b509495945050505050565b60018060a01b038151168252600060208083015181850152604083015160c0604086015280518060c087015260005b81811015610edf5782810184015187820160e001528301610ec3565b50600060e0828801015260608501519250610efe606087018415159052565b6080858101519087015260a09485015194860194909452505050601f01601f19160160e00190565b600082825180855260208086019550808260051b84010181860160005b84811015610f7157601f19868403018952610f5f838351610e94565b98840198925090830190600101610f43565b5090979650505050505050565b604081526000610f916040830185610e59565b8281036020840152610fa38185610f26565b95945050505050565b600060208284031215610fbe57600080fd5b81356001600160a01b0381168114610fd557600080fd5b9392505050565b602081526000610fd56020830184610e59565b60006020828403121561100157600080fd5b5035919050565b602081526000610fd56020830184610e94565b60008083601f84011261102d57600080fd5b50813567ffffffffffffffff81111561104557600080fd5b60208301915083602082850101111561064757600080fd5b60008060008060006080868803121561107557600080fd5b85359450602086013593506040860135801515811461109357600080fd5b9250606086013567ffffffffffffffff8111156110af57600080fd5b6110bb8882890161101b565b969995985093965092949392505050565b6040815260006110df6040830185610f26565b90508260208301529392505050565b60008060006040848603121561110357600080fd5b83359250602084013567ffffffffffffffff81111561112157600080fd5b61112d8682870161101b565b9497909650939450505050565b634e487b7160e01b600052601160045260246000fd5b6000600182016111625761116261113a565b5060010190565b634e487b7160e01b600052604160045260246000fd5b8082018082111561088a5761088a61113a565b8181038181111561088a5761088a61113a565b634e487b7160e01b600052603260045260246000fd5b600181811c908216806111cf57607f821691505b6020821081036111ef57634e487b7160e01b600052602260045260246000fd5b50919050565b601f82111561123f57600081815260208120601f850160051c8101602086101561121c5750805b601f850160051c820191505b8181101561123b57828155600101611228565b5050505b505050565b67ffffffffffffffff83111561125c5761125c611169565b6112708361126a83546111bb565b836111f5565b6000601f8411600181146112a4576000851561128c5750838201355b600019600387901b1c1916600186901b1783556112fe565b600083815260209020601f19861690835b828110156112d557868501358255602094850194600190920191016112b5565b50868210156112f25760001960f88860031b161c19848701351681555b505060018560011b0183555b5050505050565b83815260006020841515818401526060604084015260008454611327816111bb565b8060608701526080600180841660008114611349576001811461136357611391565b60ff1985168984015283151560051b890183019550611391565b896000528660002060005b858110156113895781548b820186015290830190880161136e565b8a0184019650505b50939a9950505050505050505050565b815167ffffffffffffffff8111156113bb576113bb611169565b6113cf816113c984546111bb565b846111f5565b602080601f83116001811461140457600084156113ec5750858301515b600019600386901b1c1916600185901b17855561123b565b600085815260208120601f198616915b8281101561143357888601518255948401946001909101908401611414565b50858210156114515787850151600019600388901b60f8161c191681555b5050505050600190811b01905550565b83815260406020820152816040820152818360608301376000818301606090810191909152601f909201601f191601019291505056fea2646970667358221220fcdcc692a1636bedf859e748c889ced39eb2344f2e898f9516b5b436c4ff640d64736f6c63430008140033",
+  "devdoc": {
+    "details": "Anyone can register an agent, set pricing, and manage lifecycle",
+    "errors": {
+      "OwnableInvalidOwner(address)": [
+        {
+          "details": "The owner is not a valid owner account. (eg. `address(0)`)"
+        }
+      ],
+      "OwnableUnauthorizedAccount(address)": [
+        {
+          "details": "The caller account is not authorized to perform an operation."
+        }
+      ]
+    },
+    "kind": "dev",
+    "methods": {
+      "getActiveAgents(uint256,uint256)": {
+        "params": {
+          "limit": "Maximum number of agents to return",
+          "offset": "Starting index"
+        },
+        "returns": {
+          "agentIds": "Array of active agent IDs",
+          "agents": "Array of active Agent structs"
+        }
+      },
+      "getAgents(uint256,uint256)": {
+        "params": {
+          "limit": "Maximum number of agents to return",
+          "offset": "Starting index"
+        },
+        "returns": {
+          "agents": "Array of Agent structs",
+          "total": "Total number of agents"
+        }
+      },
+      "getPlatformStats()": {
+        "returns": {
+          "_agentCount": "Total registered agents",
+          "_totalEarnings": "Total MNEE earned across all agents",
+          "_totalJobs": "Total jobs completed"
+        }
+      },
+      "incrementAgentStats(uint256,uint256)": {
+        "params": {
+          "agentId": "ID of the agent",
+          "earnings": "Amount earned"
+        }
+      },
+      "owner()": {
+        "details": "Returns the address of the current owner."
+      },
+      "registerAgent(uint256,string)": {
+        "params": {
+          "metadataURI": "URI pointing to agent metadata JSON",
+          "pricePerCall": "Price per service call in MNEE (wei)"
+        },
+        "returns": {
+          "agentId": "The ID of the newly registered agent"
+        }
+      },
+      "renounceOwnership()": {
+        "details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby disabling any functionality that is only available to the owner."
+      },
+      "setRouter(address)": {
+        "params": {
+          "_router": "Address of the AgentRouter contract"
+        }
+      },
+      "transferOwnership(address)": {
+        "details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
+      },
+      "updateAgent(uint256,uint256,bool,string)": {
+        "params": {
+          "active": "Whether agent is accepting jobs",
+          "agentId": "ID of the agent to update",
+          "metadataURI": "New metadata URI (empty to keep unchanged)",
+          "newPrice": "New price per call (0 to keep unchanged)"
+        }
+      }
+    },
+    "title": "AgentRegistry",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "getActiveAgents(uint256,uint256)": {
+        "notice": "Get all active agents (for discovery)"
+      },
+      "getAgents(uint256,uint256)": {
+        "notice": "Get agents with pagination"
+      },
+      "getPlatformStats()": {
+        "notice": "Get platform-wide statistics"
+      },
+      "incrementAgentStats(uint256,uint256)": {
+        "notice": "Increment agent stats after job completion (called by Router)"
+      },
+      "registerAgent(uint256,string)": {
+        "notice": "Register a new agent"
+      },
+      "setRouter(address)": {
+        "notice": "Set the router address (can only be set once or by owner)"
+      },
+      "updateAgent(uint256,uint256,bool,string)": {
+        "notice": "Update an existing agent"
+      }
+    },
+    "notice": "Permissionless registry for AI agents",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 8,
+        "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+        "label": "_owner",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_address"
+      },
+      {
+        "astId": 1384,
+        "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+        "label": "agentCount",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 1386,
+        "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+        "label": "router",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_address"
+      },
+      {
+        "astId": 1388,
+        "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+        "label": "totalPlatformEarnings",
+        "offset": 0,
+        "slot": "3",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 1390,
+        "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+        "label": "totalPlatformJobs",
+        "offset": 0,
+        "slot": "4",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 1395,
+        "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+        "label": "_agents",
+        "offset": 0,
+        "slot": "5",
+        "type": "t_mapping(t_uint256,t_struct(Agent)2569_storage)"
+      },
+      {
+        "astId": 1400,
+        "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+        "label": "_ownerAgents",
+        "offset": 0,
+        "slot": "6",
+        "type": "t_mapping(t_address,t_array(t_uint256)dyn_storage)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_array(t_uint256)dyn_storage": {
+        "base": "t_uint256",
+        "encoding": "dynamic_array",
+        "label": "uint256[]",
+        "numberOfBytes": "32"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_mapping(t_address,t_array(t_uint256)dyn_storage)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => uint256[])",
+        "numberOfBytes": "32",
+        "value": "t_array(t_uint256)dyn_storage"
+      },
+      "t_mapping(t_uint256,t_struct(Agent)2569_storage)": {
+        "encoding": "mapping",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => struct IAgentRegistry.Agent)",
+        "numberOfBytes": "32",
+        "value": "t_struct(Agent)2569_storage"
+      },
+      "t_string_storage": {
+        "encoding": "bytes",
+        "label": "string",
+        "numberOfBytes": "32"
+      },
+      "t_struct(Agent)2569_storage": {
+        "encoding": "inplace",
+        "label": "struct IAgentRegistry.Agent",
+        "members": [
+          {
+            "astId": 2558,
+            "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+            "label": "owner",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address"
+          },
+          {
+            "astId": 2560,
+            "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+            "label": "pricePerCall",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 2562,
+            "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+            "label": "metadataURI",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_string_storage"
+          },
+          {
+            "astId": 2564,
+            "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+            "label": "active",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_bool"
+          },
+          {
+            "astId": 2566,
+            "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+            "label": "totalEarnings",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 2568,
+            "contract": "contracts/AgentRegistry.sol:AgentRegistry",
+            "label": "totalJobs",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "192"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
