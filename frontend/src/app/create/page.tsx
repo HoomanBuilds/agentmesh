@@ -3,19 +3,17 @@
 import Layout from "@/components/Layout";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
-import { parseEther } from "viem";
-import { Loader2, CheckCircle } from "lucide-react";
-import AgentRegistryJSON from "@/constants/AgentRegistry.json";
-import { REGISTRY_ADDRESS } from "@/lib/contracts";
-
-const AgentRegistryABI = AgentRegistryJSON.abi;
+import { useAccount } from "wagmi";
+import { CheckCircle } from "lucide-react";
+import { useRegisterAgent, useAgentCount } from "@/hooks";
+import { LoadingSpinner, EmptyState } from "@/components/ui";
 
 export default function CreatePage() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
-  const { writeContract, data: hash, isPending } = useWriteContract();
-  const { isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash });
+  
+  const { register, status: registerStatus, transactionHash, error: registerError } = useRegisterAgent();
+  const { count: agentCount, refetch: refetchCount } = useAgentCount();
 
   const [step, setStep] = useState<"form" | "confirm" | "updating" | "done">("form");
   const [agentUuid, setAgentUuid] = useState<string | null>(null);
@@ -26,13 +24,6 @@ export default function CreatePage() {
     price: "0.01",
   });
   const [error, setError] = useState("");
-
-  // Read agent count to determine the new agent's on-chain ID
-  const { data: agentCount, refetch: refetchCount } = useReadContract({
-    address: REGISTRY_ADDRESS,
-    abi: AgentRegistryABI,
-    functionName: "agentCount",
-  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,7 +40,7 @@ export default function CreatePage() {
           name: form.name,
           description: form.description,
           system_prompt: form.system_prompt,
-          price_per_call: parseEther(form.price).toString(),
+          price_per_call: (parseFloat(form.price) * 1e18).toString(),
           owner_address: address,
         }),
       });
@@ -64,22 +55,18 @@ export default function CreatePage() {
       setAgentUuid(data.id);
       setStep("confirm");
 
-      // Step 2: Register on-chain
-      writeContract({
-        address: REGISTRY_ADDRESS,
-        abi: AgentRegistryABI,
-        functionName: "registerAgent",
-        args: [parseEther(form.price), data.id],
-      });
+      // Step 2: Register on-chain using the hook
+      register(data.id, form.price);
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Error creating agent:", err);
       setError("Failed to create agent");
     }
   }
 
+  // Handle registration success
   useEffect(() => {
     async function updateOnchainId() {
-      if (isSuccess && step === "confirm" && agentUuid) {
+      if (registerStatus === "success" && step === "confirm" && agentUuid) {
         setStep("updating");
         
         try {
@@ -93,7 +80,7 @@ export default function CreatePage() {
           });
 
           if (!res.ok) {
-            console.error("Failed to update onchain_id");
+            console.error("Failed to update onchain_id in Supabase");
           }
 
           setStep("done");
@@ -103,28 +90,80 @@ export default function CreatePage() {
         }
       }
     }
-
     updateOnchainId();
-  }, [isSuccess, step, agentUuid, refetchCount]);
+  }, [registerStatus, step, agentUuid, refetchCount]);
+
+  // Handle registration error
+  useEffect(() => {
+    if (registerError) {
+      setError(registerError);
+      setStep("form");
+    }
+  }, [registerError]);
+
+  if (!isConnected) {
+    return (
+      <Layout>
+        <div className="py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-xl mx-auto">
+            <EmptyState
+              title="Connect Your Wallet"
+              description="Connect your wallet to create an agent"
+              action={{ label: "Go Home", href: "/" }}
+            />
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2">Create Agent</h1>
-          <p className="text-[var(--text-secondary)] mb-8">
-            Define your AI agent and set your price. No approval needed.
-          </p>
+          <h1 className="text-3xl font-bold mb-8">Create Agent</h1>
 
-          {step === "form" && (
+          {step === "done" ? (
+            <div className="card p-8 text-center">
+              <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-400" />
+              <h2 className="text-2xl font-bold mb-2">Agent Created!</h2>
+              <p className="text-[var(--text-secondary)] mb-6">
+                Your agent is now live on-chain
+              </p>
+              <button
+                onClick={() => router.push(`/agents/${agentUuid}`)}
+                className="btn-primary"
+              >
+                View Agent
+              </button>
+            </div>
+          ) : step === "confirm" || step === "updating" ? (
+            <div className="card p-8 text-center">
+              <LoadingSpinner size="lg" className="mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">
+                {step === "confirm" ? "Confirm Transaction" : "Updating Database..."}
+              </h2>
+              <p className="text-[var(--text-secondary)]">
+                {step === "confirm"
+                  ? "Please confirm the transaction in your wallet"
+                  : "Linking on-chain ID to database..."}
+              </p>
+            </div>
+          ) : (
             <form onSubmit={handleSubmit} className="card p-6 space-y-6">
+              {error && (
+                <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
+
               <div>
                 <label className="label">Name</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g., Code Reviewer"
+                  placeholder="Code Reviewer Pro"
                   className="input"
                   required
                 />
@@ -135,7 +174,7 @@ export default function CreatePage() {
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="What does your agent do?"
+                  placeholder="Reviews code and suggests improvements..."
                   className="textarea"
                   rows={3}
                 />
@@ -146,9 +185,9 @@ export default function CreatePage() {
                 <textarea
                   value={form.system_prompt}
                   onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
-                  placeholder="Define your agent's personality and capabilities..."
+                  placeholder="You are an expert code reviewer..."
                   className="textarea"
-                  rows={5}
+                  rows={4}
                   required
                 />
               </div>
@@ -166,58 +205,14 @@ export default function CreatePage() {
                 />
               </div>
 
-              {error && (
-                <p className="text-red-400 text-sm">{error}</p>
-              )}
-
               <button
                 type="submit"
-                disabled={!isConnected || isPending}
+                disabled={registerStatus === "pending" || registerStatus === "confirming"}
                 className="btn-primary w-full"
               >
-                {!isConnected
-                  ? "Connect Wallet"
-                  : isPending
-                  ? "Creating..."
-                  : "Create Agent"}
+                {registerStatus === "pending" ? "Creating..." : "Create Agent"}
               </button>
             </form>
-          )}
-
-          {step === "confirm" && (
-            <div className="card p-6 text-center">
-              <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin" />
-              <h2 className="text-xl font-semibold mb-2">Registering On-Chain</h2>
-              <p className="text-[var(--text-secondary)]">
-                Please confirm the transaction in your wallet...
-              </p>
-            </div>
-          )}
-
-          {step === "updating" && (
-            <div className="card p-6 text-center">
-              <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin" />
-              <h2 className="text-xl font-semibold mb-2">Finalizing</h2>
-              <p className="text-[var(--text-secondary)]">
-                Linking on-chain registration to database...
-              </p>
-            </div>
-          )}
-
-          {step === "done" && (
-            <div className="card p-6 text-center">
-              <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-400" />
-              <h2 className="text-xl font-semibold mb-2">Agent Created</h2>
-              <p className="text-[var(--text-secondary)] mb-6">
-                Your agent is now live and ready to receive requests.
-              </p>
-              <button
-                onClick={() => router.push(`/agents/${agentUuid}`)}
-                className="btn-primary"
-              >
-                View Agent
-              </button>
-            </div>
           )}
         </div>
       </div>

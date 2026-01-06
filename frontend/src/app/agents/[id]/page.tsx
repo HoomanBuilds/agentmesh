@@ -3,52 +3,46 @@
 import Layout from "@/components/Layout";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bot, Loader2, Copy, CheckCircle } from "lucide-react";
+import { Bot, Copy, CheckCircle } from "lucide-react";
 import { formatEther } from "viem";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { ROUTER_ADDRESS, MNEE_ADDRESS, ESCROW_ADDRESS } from "@/lib/contracts";
-import AgentRouterJSON from "@/constants/AgentRouter.json";
-import MockMNEEJSON from "@/constants/MockMNEE.json";
-import type { Agent } from "@/types";
-
-const AgentRouterABI = AgentRouterJSON.abi;
-const MockMNEEABI = MockMNEEJSON.abi;
+import { useAccount } from "wagmi";
+import { useAgent, useRequestService } from "@/hooks";
+import { PageLoader, EmptyState, LoadingSpinner } from "@/components/ui";
 
 export default function AgentDetailPage() {
   const params = useParams();
   const agentId = params.id as string;
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
+  const { agent, loading } = useAgent(agentId);
 
-  const [agent, setAgent] = useState<Agent | null>(null);
-  const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
-  const [executing, setExecuting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [status, setStatus] = useState("");
+  const [executing, setExecuting] = useState(false);
 
-  // Contract write hooks
-  const { writeContract: approve, data: approveHash, error: approveError } = useWriteContract();
-  const { writeContract: requestService, data: requestHash, error: requestError } = useWriteContract();
+  const { 
+    requestService, 
+    jobId, 
+    status: serviceStatus, 
+    error: serviceError,
+    reset: resetService 
+  } = useRequestService();
 
-  const { isSuccess: approveSuccess } = useWaitForTransactionReceipt({ hash: approveHash });
-  const { isSuccess: requestSuccess, data: requestReceipt } = useWaitForTransactionReceipt({ hash: requestHash });
-
+  // Execute agent when jobId is received
   useEffect(() => {
-    fetchAgent();
-  }, [agentId]);
-
-  async function fetchAgent() {
-    try {
-      const res = await fetch(`/api/agents/${agentId}`);
-      const { data } = await res.json();
-      setAgent(data);
-    } catch (error) {
-      console.error("Failed to fetch agent:", error);
-    } finally {
-      setLoading(false);
+    if (serviceStatus === "success" && jobId && executing) {
+      executeAgent(jobId);
     }
-  }
+  }, [serviceStatus, jobId, executing]);
+
+  // Handle service error
+  useEffect(() => {
+    if (serviceError && executing) {
+      setOutput(`Error: ${serviceError}`);
+      setExecuting(false);
+      resetService();
+    }
+  }, [serviceError, executing, resetService]);
 
   async function handleTest() {
     if (!agent || !isConnected || agent.onchain_id === null) {
@@ -58,90 +52,17 @@ export default function AgentDetailPage() {
     
     setExecuting(true);
     setOutput("");
-    setStatus("Approving MNEE spend...");
-
-    try {
-      // Step 1: Approve MNEE
-      approve({
-        address: MNEE_ADDRESS,
-        abi: MockMNEEABI,
-        functionName: "approve",
-        args: [ESCROW_ADDRESS, BigInt(agent.price_per_call)],
-      });
-    } catch (error) {
-      console.error("Approve error:", error);
-      setOutput("Failed to approve MNEE");
-      setExecuting(false);
-      setStatus("");
-    }
+    resetService();
+    
+    requestService(agent.onchain_id, BigInt(agent.price_per_call));
   }
 
-  useEffect(() => {
-    if (approveError) {
-      console.error("Approve error:", approveError);
-      setOutput(`Approval failed: ${approveError.message}`);
-      setExecuting(false);
-      setStatus("");
-    }
-  }, [approveError]);
-
-  useEffect(() => {
-    if (approveSuccess && agent && agent.onchain_id !== null && executing) {
-      setStatus("Requesting service (locking payment)...");
-      requestService({
-        address: ROUTER_ADDRESS,
-        abi: AgentRouterABI,
-        functionName: "requestService",
-        args: [BigInt(agent.onchain_id), BigInt(0)],
-      });
-    }
-  }, [approveSuccess, agent, executing]);
-
-  useEffect(() => {
-    if (requestError) {
-      console.error("Request error:", requestError);
-      setOutput(`Request failed: ${requestError.message}`);
-      setExecuting(false);
-      setStatus("");
-    }
-  }, [requestError]);
-
-  useEffect(() => {
-    if (requestSuccess && requestReceipt && executing) {
-      setStatus("Executing agent with OpenAI...");
-      
-      const serviceRequestedTopic = "0x" + "ServiceRequested(bytes32,uint256,uint256,address,uint256)"
-        .split("")
-        .reduce((hash, char) => {
-          return hash;
-        }, "");
-      
-      const routerLog = requestReceipt.logs.find(
-        (log) => log.address.toLowerCase() === ROUTER_ADDRESS.toLowerCase()
-      );
-      
-      if (routerLog && routerLog.topics[1]) {
-        const extractedJobId = routerLog.topics[1] as string;
-        console.log("Extracted jobId:", extractedJobId);
-        executeAgent(extractedJobId);
-      } else {
-        console.log("All logs:", requestReceipt.logs);
-        for (const log of requestReceipt.logs) {
-          console.log("Log address:", log.address, "topics:", log.topics);
-        }
-        setOutput("Failed to extract jobId from transaction. Check console for details.");
-        setExecuting(false);
-        setStatus("");
-      }
-    }
-  }, [requestSuccess, requestReceipt, executing]);
-
-  async function executeAgent(jobId: string) {
+  async function executeAgent(jobIdValue: string) {
     try {
       const res = await fetch(`/api/agents/${agentId}/execute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId, input }),
+        body: JSON.stringify({ jobId: jobIdValue, input }),
       });
       const data = await res.json();
       
@@ -155,7 +76,7 @@ export default function AgentDetailPage() {
       setOutput("Failed to execute agent");
     } finally {
       setExecuting(false);
-      setStatus("");
+      resetService();
     }
   }
 
@@ -167,12 +88,23 @@ export default function AgentDetailPage() {
     }
   }
 
+  function getStatusMessage(): string {
+    switch (serviceStatus) {
+      case "approving":
+        return "Approving MNEE spend...";
+      case "requesting":
+        return "Requesting service (locking payment)...";
+      case "success":
+        return "Executing agent with OpenAI...";
+      default:
+        return "";
+    }
+  }
+
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-8 h-8 animate-spin" />
-        </div>
+        <PageLoader />
       </Layout>
     );
   }
@@ -180,9 +112,14 @@ export default function AgentDetailPage() {
   if (!agent) {
     return (
       <Layout>
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <Bot className="w-12 h-12 mb-4 text-[var(--text-muted)]" />
-          <h2 className="text-xl font-semibold mb-2">Agent not found</h2>
+        <div className="py-12 px-4">
+          <div className="max-w-xl mx-auto">
+            <EmptyState
+              title="Agent not found"
+              description="This agent doesn't exist or has been removed"
+              action={{ label: "Browse Agents", href: "/agents" }}
+            />
+          </div>
         </div>
       </Layout>
     );
@@ -255,10 +192,10 @@ export default function AgentDetailPage() {
                 : `Test (${formatEther(BigInt(agent.price_per_call))} MNEE)`}
             </button>
 
-            {status && (
+            {executing && serviceStatus !== "idle" && (
               <div className="flex items-center gap-2 mb-4 text-sm text-[var(--text-secondary)]">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {status}
+                <LoadingSpinner size="sm" />
+                {getStatusMessage()}
               </div>
             )}
 

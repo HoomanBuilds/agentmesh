@@ -4,13 +4,10 @@ import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { formatEther, parseEther } from "viem";
-import { MNEE_ADDRESS } from "@/lib/contracts";
-import MockMNEEJSON from "@/constants/MockMNEE.json";
-import { ChevronDown, Loader2 } from "lucide-react";
-
-const MockMNEEABI = MockMNEEJSON.abi;
+import { useAccount } from "wagmi";
+import { ChevronDown } from "lucide-react";
+import { useMyMneeBalance, useMintMnee } from "@/hooks";
+import { LoadingSpinner } from "@/components/ui";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -20,26 +17,19 @@ const navLinks = [
 ];
 
 function MneeBalance() {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data: balance, refetch } = useReadContract({
-    address: MNEE_ADDRESS,
-    abi: MockMNEEABI,
-    functionName: "balanceOf",
-    args: address ? [address] : undefined,
-  });
-
-  const { writeContract: mint, data: mintHash, isPending: isMinting } = useWriteContract();
-  const { isSuccess: mintSuccess } = useWaitForTransactionReceipt({ hash: mintHash });
+  const { formatted, refetch } = useMyMneeBalance();
+  const { mint, isPending, isSuccess } = useMintMnee();
 
   useEffect(() => {
-    if (mintSuccess) {
+    if (isSuccess) {
       refetch();
       setDropdownOpen(false);
     }
-  }, [mintSuccess, refetch]);
+  }, [isSuccess, refetch]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -51,19 +41,9 @@ function MneeBalance() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  function handleMint() {
-    if (!address) return;
-    mint({
-      address: MNEE_ADDRESS,
-      abi: MockMNEEABI,
-      functionName: "mint",
-      args: [address, parseEther("10")], 
-    });
-  }
-
   if (!isConnected) return null;
 
-  const formattedBalance = balance ? parseFloat(formatEther(balance as bigint)).toFixed(2) : "0.00";
+  const formattedBalance = parseFloat(formatted).toFixed(2);
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -84,13 +64,13 @@ function MneeBalance() {
           </div>
           <div className="p-2">
             <button
-              onClick={handleMint}
-              disabled={isMinting}
+              onClick={() => mint("10")}
+              disabled={isPending}
               className="w-full px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--border-default)] transition-colors text-sm font-medium flex items-center justify-center gap-2"
             >
-              {isMinting ? (
+              {isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <LoadingSpinner size="sm" />
                   Minting...
                 </>
               ) : (
@@ -140,10 +120,7 @@ export default function Navbar() {
 
           {/* MNEE Balance + Wallet Connect */}
           <div className="flex items-center gap-3">
-            {/* MNEE Balance Button */}
             <MneeBalance />
-
-            {/* Wallet Connect */}
             <ConnectButton.Custom>
               {({
                 account,
