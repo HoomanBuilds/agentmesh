@@ -1,8 +1,9 @@
 import { http, createConfig } from "wagmi";
 import { mainnet, sepolia } from "wagmi/chains";
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { CHAIN_ID, getRpcUrl } from "./contracts";
 
-const chainId = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "11155111");
+const chainId = parseInt(CHAIN_ID);
 
 // Chain configuration based on environment
 const getChains = () => {
@@ -14,16 +15,18 @@ const getChains = () => {
 
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo";
 
+// Get the configured RPC URL
+const rpcUrl = getRpcUrl();
+
 export const config = getDefaultConfig({
   appName: "AgentPay Router",
   projectId,
   chains: getChains(),
   ssr: true,
+  transports: {
+    [mainnet.id]: http(chainId === 1 ? rpcUrl : undefined),
+    [sepolia.id]: http(chainId === 11155111 ? rpcUrl : undefined),
+  },
 });
 
 export const CURRENT_CHAIN_ID = chainId;
-
-export const RPC_URLS: Record<number, string> = {
-  1: "https://eth.llamarpc.com",
-  11155111: "https://rpc.sepolia.org",
-};
