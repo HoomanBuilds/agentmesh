@@ -40,7 +40,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
 
     // Only allow updating specific fields
-    const allowedFields = ["onchain_id", "active", "description", "name"];
+    const allowedFields = [
+      "onchain_id", 
+      "active", 
+      "description", 
+      "name", 
+      "system_prompt",
+      "price_per_call",
+      "image_url"
+    ];
     const updates: Record<string, unknown> = {};
 
     for (const field of allowedFields) {

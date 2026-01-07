@@ -3,13 +3,14 @@
 // ==========================================
 
 export interface Agent {
-  id: string; // UUID from Supabase
-  onchain_id: number | null; // ID from smart contract
+  id: string;
+  onchain_id: number | null; 
   owner_address: string;
   name: string;
   description: string | null;
   system_prompt: string;
   price_per_call: string; // In wei
+  image_url: string | null;
   input_schema: Record<string, unknown>;
   output_schema: Record<string, unknown>;
   active: boolean;
@@ -33,8 +34,8 @@ export interface CreateAgentInput {
 export type JobStatus = "pending" | "completed" | "disputed" | "expired";
 
 export interface Job {
-  id: string; // UUID from Supabase
-  job_id: string; // bytes32 from contract
+  id: string; 
+  job_id: string;
   agent_uuid: string;
   caller_address: string;
   input: Record<string, unknown> | null;
