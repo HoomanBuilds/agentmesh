@@ -3,22 +3,26 @@
 import Layout from "@/components/Layout";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bot, Copy, CheckCircle } from "lucide-react";
+import { Bot, Copy, CheckCircle, Edit } from "lucide-react";
 import { formatEther } from "viem";
 import { useAccount } from "wagmi";
 import { useAgent, useRequestService } from "@/hooks";
 import { PageLoader, EmptyState, LoadingSpinner } from "@/components/ui";
+import { AgentWallet, AgentImage, EditAgentModal } from "@/components/agent";
 
 export default function AgentDetailPage() {
   const params = useParams();
   const agentId = params.id as string;
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const { agent, loading } = useAgent(agentId);
+
+  const isOwner = address && agent ? address.toLowerCase() === agent.owner_address?.toLowerCase() : false;
 
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [copied, setCopied] = useState(false);
   const [executing, setExecuting] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const { 
     requestService, 
@@ -132,16 +136,29 @@ export default function AgentDetailPage() {
           {/* Header */}
           <div className="card p-6 mb-6">
             <div className="flex items-start gap-4">
-              <div className="w-16 h-16 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center flex-shrink-0">
-                <Bot className="w-8 h-8" />
-              </div>
+              <AgentImage 
+                imageUrl={agent.image_url} 
+                name={agent.name} 
+                size="lg" 
+              />
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-2xl font-bold">{agent.name}</h1>
-                  {agent.onchain_id !== null && (
-                    <span className="px-2 py-0.5 text-xs bg-[var(--bg-tertiary)] rounded">
-                      #{agent.onchain_id}
-                    </span>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold">{agent.name}</h1>
+                    {agent.onchain_id !== null && (
+                      <span className="px-2 py-0.5 text-xs bg-[var(--bg-tertiary)] rounded">
+                        #{agent.onchain_id}
+                      </span>
+                    )}
+                  </div>
+                  {isOwner && (
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="btn-secondary text-sm flex items-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </button>
                   )}
                 </div>
                 <p className="text-[var(--text-secondary)] mb-4">
@@ -162,6 +179,13 @@ export default function AgentDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Agent Wallet */}
+          {agent.onchain_id !== null && (
+            <div className="mb-6">
+              <AgentWallet agentId={agent.onchain_id} isOwner={isOwner} />
+            </div>
+          )}
 
           {/* Test Panel */}
           <div className="card p-6">
@@ -210,6 +234,18 @@ export default function AgentDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {agent && (
+        <EditAgentModal
+          agent={agent}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSave={(updates) => {
+            window.location.reload();
+          }}
+        />
+      )}
     </Layout>
   );
 }
