@@ -1,107 +1,40 @@
 "use client";
 
 import Layout from "@/components/Layout";
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Bot, Copy, CheckCircle, Edit } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { 
+  Bot, Copy, CheckCircle, Edit, MessageSquare, ChevronDown, ChevronUp,
+  User, Calendar, DollarSign, Zap, ArrowDownRight, ArrowUpRight
+} from "lucide-react";
+import { Link } from "next-view-transitions";
 import { formatEther } from "viem";
 import { useAccount } from "wagmi";
-import { useAgent, useRequestService } from "@/hooks";
-import { PageLoader, EmptyState, LoadingSpinner } from "@/components/ui";
+import { useAgent, useAgentWallet, useAgentTransactions } from "@/hooks";
+import { PageLoader, EmptyState } from "@/components/ui";
 import { AgentWallet, AgentImage, EditAgentModal } from "@/components/agent";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function AgentDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const agentId = params.id as string;
   const { isConnected, address } = useAccount();
   const { agent, loading } = useAgent(agentId);
+  const { wallet } = useAgentWallet(agent?.onchain_id ?? null);
+  const { transactions, stats, loading: transactionsLoading } = useAgentTransactions(agentId);
 
   const isOwner = address && agent ? address.toLowerCase() === agent.owner_address?.toLowerCase() : false;
 
-  const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
   const [copied, setCopied] = useState(false);
-  const [executing, setExecuting] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-
-  const { 
-    requestService, 
-    jobId, 
-    status: serviceStatus, 
-    error: serviceError,
-    reset: resetService 
-  } = useRequestService();
-
-  // Execute agent when jobId is received
-  useEffect(() => {
-    if (serviceStatus === "success" && jobId && executing) {
-      executeAgent(jobId);
-    }
-  }, [serviceStatus, jobId, executing]);
-
-  // Handle service error
-  useEffect(() => {
-    if (serviceError && executing) {
-      setOutput(`Error: ${serviceError}`);
-      setExecuting(false);
-      resetService();
-    }
-  }, [serviceError, executing, resetService]);
-
-  async function handleTest() {
-    if (!agent || !isConnected || agent.onchain_id === null) {
-      console.log("Cannot test:", { agent, isConnected, onchain_id: agent?.onchain_id });
-      return;
-    }
-    
-    setExecuting(true);
-    setOutput("");
-    resetService();
-    
-    requestService(agent.onchain_id, BigInt(agent.price_per_call));
-  }
-
-  async function executeAgent(jobIdValue: string) {
-    try {
-      const res = await fetch(`/api/agents/${agentId}/execute`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId: jobIdValue, input }),
-      });
-      const data = await res.json();
-      
-      if (data.error) {
-        setOutput(`Error: ${data.error}`);
-      } else {
-        setOutput(data.output || "No output received");
-      }
-    } catch (error) {
-      console.error("Execute error:", error);
-      setOutput("Failed to execute agent");
-    } finally {
-      setExecuting(false);
-      resetService();
-    }
-  }
+  const [isTransactionsOpen, setIsTransactionsOpen] = useState(false);
 
   function copyToClipboard() {
     if (agent) {
       navigator.clipboard.writeText(agent.id);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    }
-  }
-
-  function getStatusMessage(): string {
-    switch (serviceStatus) {
-      case "approving":
-        return "Approving MNEE spend...";
-      case "requesting":
-        return "Requesting service (locking payment)...";
-      case "success":
-        return "Executing agent with OpenAI...";
-      default:
-        return "";
     }
   }
 
@@ -116,40 +49,104 @@ export default function AgentDetailPage() {
   if (!agent) {
     return (
       <Layout>
-        <div className="py-12 px-4">
-          <div className="max-w-xl mx-auto">
-            <EmptyState
-              title="Agent not found"
-              description="This agent doesn't exist or has been removed"
-              action={{ label: "Browse Agents", href: "/agents" }}
-            />
+        <div className="py-12">
+          <div className="max-w-xl mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <EmptyState
+                title="Agent not found"
+                description="This agent doesn't exist or has been removed"
+                action={{ label: "Browse Agents", href: "/agents" }}
+              />
+            </motion.div>
           </div>
         </div>
       </Layout>
     );
   }
 
+
+
   return (
     <Layout>
-      <div className="py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="card p-6 mb-6">
-            <div className="flex items-start gap-4">
-              <AgentImage 
-                imageUrl={agent.image_url} 
-                name={agent.name} 
-                size="lg" 
-              />
-              <div className="flex-1">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold">{agent.name}</h1>
-                    {agent.onchain_id !== null && (
-                      <span className="px-2 py-0.5 text-xs bg-[var(--bg-tertiary)] rounded">
-                        #{agent.onchain_id}
-                      </span>
-                    )}
+      <div className="py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-7xl mx-auto px-6"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            {/* Left Column - Image & Actions */}
+            <div className="lg:col-span-2">
+              {/* Agent Image */}
+              <div className="card p-6 mb-6">
+                <div className="aspect-square w-full rounded-xl overflow-hidden bg-[var(--bg-tertiary)] flex items-center justify-center mb-6">
+                  {agent.image_url ? (
+                    <img 
+                      src={agent.image_url} 
+                      alt={agent.name} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <Bot className="w-24 h-24 text-[var(--text-muted)]" />
+                  )}
+                </div>
+
+                {/* Chat Button */}
+                {isOwner && (
+                  <Link
+                    href={`/chat/${agent.id}`}
+                    className="btn-primary w-full flex items-center justify-center gap-2 py-4"
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                    Chat with {agent.name}
+                  </Link>
+                )}
+              </div>
+
+              {/* Quick Stats */}
+              <div className="card p-6">
+                <h3 className="text-sm font-medium text-[var(--text-muted)] mb-4 uppercase tracking-wider">
+                  Statistics
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[var(--text-secondary)]">Total Jobs</span>
+                    <span className="font-semibold">{stats.totalJobs}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[var(--text-secondary)]">Total Earned</span>
+                    <span className="font-semibold text-green-500">{stats.totalEarned} MNEE</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[var(--text-secondary)]">Total Spent</span>
+                    <span className="font-semibold text-orange-500">{stats.totalSpent} MNEE</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Details */}
+            <div className="lg:col-span-3">
+              {/* Header Card */}
+              <div className="card p-6 mb-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h1 className="text-3xl font-bold">{agent.name}</h1>
+                      {agent.onchain_id !== null && (
+                        <span className="px-2 py-0.5 text-xs bg-[var(--bg-tertiary)] rounded">
+                          #{agent.onchain_id}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[var(--text-secondary)]">
+                      {agent.description || "No description provided"}
+                    </p>
                   </div>
                   {isOwner && (
                     <button
@@ -161,13 +158,14 @@ export default function AgentDetailPage() {
                     </button>
                   )}
                 </div>
-                <p className="text-[var(--text-secondary)] mb-4">
-                  {agent.description || "No description"}
-                </p>
-                <div className="flex items-center gap-4">
-                  <span className="text-lg font-semibold">
-                    {formatEther(BigInt(agent.price_per_call))} MNEE
-                  </span>
+
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-[var(--accent-primary)]" />
+                    <span className="font-semibold">
+                      {formatEther(BigInt(agent.price_per_call))} MNEE / call
+                    </span>
+                  </div>
                   <button
                     onClick={copyToClipboard}
                     className="flex items-center gap-1 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)]"
@@ -177,62 +175,145 @@ export default function AgentDetailPage() {
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Agent Wallet */}
-          {agent.onchain_id !== null && (
-            <div className="mb-6">
-              <AgentWallet agentId={agent.onchain_id} isOwner={isOwner} />
-            </div>
-          )}
+              {/* Details Card */}
+              <div className="card p-6 mb-6">
+                <h3 className="text-lg font-semibold mb-4">Details</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center">
+                      <User className="w-5 h-5 text-[var(--text-secondary)]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-[var(--text-muted)]">Owner</div>
+                      <div className="font-mono text-sm">
+                        {agent.owner_address?.slice(0, 6)}...{agent.owner_address?.slice(-4)}
+                        {isOwner && (
+                          <span className="ml-2 px-2 py-0.5 bg-[var(--bg-tertiary)] text-[var(--accent-primary)] text-xs rounded">
+                            You
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
-          {/* Test Panel */}
-          <div className="card p-6">
-            <h2 className="text-lg font-semibold mb-4">Test Agent</h2>
-            
-            <div className="mb-4">
-              <label className="label">Input</label>
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Enter your prompt..."
-                className="textarea"
-                rows={4}
-              />
-            </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-[var(--text-secondary)]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-[var(--text-muted)]">Created</div>
+                      <div className="text-sm">
+                        {new Date(agent.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
 
-            <button
-              onClick={handleTest}
-              disabled={!isConnected || !input || executing || agent.onchain_id === null}
-              className="btn-primary w-full mb-4"
-            >
-              {!isConnected
-                ? "Connect Wallet"
-                : agent.onchain_id === null
-                ? "Agent Not On-chain"
-                : executing
-                ? "Processing..."
-                : `Test (${formatEther(BigInt(agent.price_per_call))} MNEE)`}
-            </button>
-
-            {executing && serviceStatus !== "idle" && (
-              <div className="flex items-center gap-2 mb-4 text-sm text-[var(--text-secondary)]">
-                <LoadingSpinner size="sm" />
-                {getStatusMessage()}
-              </div>
-            )}
-
-            {output && (
-              <div>
-                <label className="label">Output</label>
-                <div className="bg-[var(--bg-tertiary)] rounded-lg p-4 text-sm whitespace-pre-wrap max-h-96 overflow-auto">
-                  {output}
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-[var(--text-secondary)]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-[var(--text-muted)]">Status</div>
+                      <div className="text-sm flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${agent.active ? 'bg-green-500' : 'bg-gray-500'}`} />
+                        {agent.active ? "Active" : "Inactive"}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
+
+              {/* Agent Wallet */}
+              {agent.onchain_id !== null && (
+                <div className="mb-6">
+                  <AgentWallet agentId={agent.onchain_id} isOwner={isOwner} ownerAddress={address} />
+                </div>
+              )}
+
+              {/* System Prompt */}
+              {agent.system_prompt && (
+                <div className="card p-6 mb-6">
+                  <h3 className="text-lg font-semibold mb-4">System Prompt</h3>
+                  <div className="bg-[var(--bg-tertiary)] rounded-lg p-4 text-sm text-[var(--text-secondary)] whitespace-pre-wrap max-h-48 overflow-auto">
+                    {agent.system_prompt}
+                  </div>
+                </div>
+              )}
+
+              {/* Transaction History - Collapsible */}
+              <div className="card overflow-hidden">
+                <button
+                  onClick={() => setIsTransactionsOpen(!isTransactionsOpen)}
+                  className="w-full p-6 flex items-center justify-between hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  <h3 className="text-lg font-semibold">Transaction History</h3>
+                  {isTransactionsOpen ? (
+                    <ChevronUp className="w-5 h-5 text-[var(--text-muted)]" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-[var(--text-muted)]" />
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {isTransactionsOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-6 pb-6 space-y-3">
+                        {transactionsLoading ? (
+                          <div className="text-center py-8 text-[var(--text-muted)]">
+                            Loading transactions...
+                          </div>
+                        ) : transactions.length > 0 ? (
+                          transactions.map((tx) => (
+                            <div
+                              key={tx.id}
+                              className="flex items-center gap-4 p-4 bg-[var(--bg-tertiary)] rounded-lg"
+                            >
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                tx.type === "earned" 
+                                  ? "bg-green-500/10 text-green-500" 
+                                  : "bg-orange-500/10 text-orange-500"
+                              }`}>
+                                {tx.type === "earned" ? (
+                                  <ArrowDownRight className="w-5 h-5" />
+                                ) : (
+                                  <ArrowUpRight className="w-5 h-5" />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-medium">
+                                  {tx.type === "earned" ? "Received from" : "Paid to"} {tx.counterparty.name}
+                                </div>
+                                <div className="text-xs text-[var(--text-muted)]">
+                                  {tx.description} • {new Date(tx.createdAt).toLocaleDateString()}
+                                </div>
+                              </div>
+                              <div className={`font-semibold ${
+                                tx.type === "earned" ? "text-green-500" : "text-orange-500"
+                              }`}>
+                                {tx.type === "earned" ? "+" : "-"}{tx.amount} MNEE
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-[var(--text-muted)]">
+                            No transactions yet
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Edit Modal */}
@@ -241,7 +322,7 @@ export default function AgentDetailPage() {
           agent={agent}
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
-          onSave={(updates) => {
+          onSave={() => {
             window.location.reload();
           }}
         />

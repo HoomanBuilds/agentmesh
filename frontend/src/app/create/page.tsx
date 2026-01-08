@@ -1,12 +1,14 @@
 "use client";
 
-import Layout from "@/components/Layout";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Upload, X, Image as ImageIcon } from "lucide-react";
+import imageCompression from "browser-image-compression";
+import Layout from "@/components/Layout";
 import { useRegisterAgent, useAgentCount } from "@/hooks";
 import { LoadingSpinner, EmptyState } from "@/components/ui";
+import { motion } from "framer-motion";
 
 export default function CreatePage() {
   const router = useRouter();
@@ -15,7 +17,7 @@ export default function CreatePage() {
   const { register, status: registerStatus, transactionHash, error: registerError } = useRegisterAgent();
   const { count: agentCount, refetch: refetchCount } = useAgentCount();
 
-  const [step, setStep] = useState<"form" | "confirm" | "updating" | "done">("form");
+  const [step, setStep] = useState<"form" | "uploading_image" | "confirm" | "updating" | "done">("form");
   const [agentUuid, setAgentUuid] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
@@ -23,7 +25,41 @@ export default function CreatePage() {
     system_prompt: "",
     price: "0.01",
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      const objectUrl = URL.createObjectURL(file);
+      setImagePreview(objectUrl);
+
+      try {
+        const options = {
+          maxSizeMB: 0.1, 
+          maxWidthOrHeight: 512,
+          useWebWorker: true,
+          fileType: "image/jpeg"
+        };
+        
+        const compressedFile = await imageCompression(file, options);
+        setImageFile(compressedFile);
+      } catch (error) {
+        console.error("Error compressing image:", error);
+        setError("Failed to process image. Please try another one.");
+      }
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+      setImagePreview(null);
+    }
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,20 +89,51 @@ export default function CreatePage() {
       }
 
       setAgentUuid(data.id);
+      
+      // Step 1.5: Upload Image if exists
+      if (imageFile) {
+        setStep("uploading_image");
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        formData.append("agentId", data.id);
+
+        const uploadRes = await fetch("/api/upload-image", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          console.error("Failed to upload image");
+        }
+      }
+
+      // Step 2: Get the next agent ID (current count = next ID)
+      const { data: currentCount } = await refetchCount();
+      const nextAgentId = Number(currentCount || 0);
+      
+      // Step 3: Get the wallet address for this agent ID from backend
+      const walletRes = await fetch(`/api/agent-wallet/info?agentId=${nextAgentId}`);
+      const { data: walletData } = await walletRes.json();
+      
+      if (!walletData?.address) {
+        setError("Failed to get agent wallet address");
+        return;
+      }
+      
       setStep("confirm");
 
-      // Step 2: Register on-chain using the hook
-      register(data.id, form.price);
+      // Step 4: Register on-chain with wallet address
+      register(form.price, data.id, walletData.address);
     } catch (err) {
       console.error("Error creating agent:", err);
       setError("Failed to create agent");
+      setStep("form");
     }
   }
 
-  // Handle registration success
   useEffect(() => {
     async function updateOnchainId() {
-      if (registerStatus === "success" && step === "confirm" && agentUuid) {
+      if (registerStatus === "success" && step === "confirm" && agentUuid && address) {
         setStep("updating");
         
         try {
@@ -76,7 +143,10 @@ export default function CreatePage() {
           const res = await fetch(`/api/agents/${agentUuid}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ onchain_id: onchainId }),
+            body: JSON.stringify({ 
+              onchain_id: onchainId,
+              ownerAddress: address  
+            }),
           });
 
           if (!res.ok) {
@@ -91,7 +161,7 @@ export default function CreatePage() {
       }
     }
     updateOnchainId();
-  }, [registerStatus, step, agentUuid, refetchCount]);
+  }, [registerStatus, step, agentUuid, refetchCount, address]);
 
   // Handle registration error
   useEffect(() => {
@@ -104,13 +174,19 @@ export default function CreatePage() {
   if (!isConnected) {
     return (
       <Layout>
-        <div className="py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-xl mx-auto">
-            <EmptyState
-              title="Connect Your Wallet"
-              description="Connect your wallet to create an agent"
-              action={{ label: "Go Home", href: "/" }}
-            />
+        <div className="py-12">
+          <div className="max-w-xl mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <EmptyState
+                title="Connect Your Wallet"
+                description="Connect your wallet to create an agent"
+                action={{ label: "Go Home", href: "/" }}
+              />
+            </motion.div>
           </div>
         </div>
       </Layout>
@@ -119,8 +195,13 @@ export default function CreatePage() {
 
   return (
     <Layout>
-      <div className="py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-xl mx-auto">
+      <div className="py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-xl mx-auto px-6"
+        >
           <h1 className="text-3xl font-bold mb-8">Create Agent</h1>
 
           {step === "done" ? (
@@ -137,16 +218,22 @@ export default function CreatePage() {
                 View Agent
               </button>
             </div>
-          ) : step === "confirm" || step === "updating" ? (
+          ) : step === "confirm" || step === "updating" || step === "uploading_image" ? (
             <div className="card p-8 text-center">
               <LoadingSpinner size="lg" className="mx-auto mb-4" />
               <h2 className="text-xl font-semibold mb-2">
-                {step === "confirm" ? "Confirm Transaction" : "Updating Database..."}
+                {step === "uploading_image" 
+                  ? "Uploading Image..." 
+                  : step === "confirm" 
+                    ? "Confirm Transaction" 
+                    : "Updating Database..."}
               </h2>
               <p className="text-[var(--text-secondary)]">
-                {step === "confirm"
-                  ? "Please confirm the transaction in your wallet"
-                  : "Linking on-chain ID to database..."}
+                {step === "uploading_image"
+                  ? "Optimizing and uploading your agent's photo..."
+                  : step === "confirm"
+                    ? "Please confirm the transaction in your wallet"
+                    : "Linking on-chain ID to database..."}
               </p>
             </div>
           ) : (
@@ -156,6 +243,49 @@ export default function CreatePage() {
                   {error}
                 </div>
               )}
+
+              {/* Image Upload */}
+              <div>
+                <label className="label">Agent Photo</label>
+                <div className="mt-2">
+                  {imagePreview ? (
+                    <div className="relative w-32 h-32">
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover rounded-xl border border-[var(--border-primary)]"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center w-full">
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-[var(--border-primary)] border-dashed rounded-xl cursor-pointer hover:bg-[var(--bg-tertiary)] transition-colors">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <Upload className="w-8 h-8 mb-2 text-[var(--text-muted)]" />
+                          <p className="text-sm text-[var(--text-muted)]">
+                            <span className="font-semibold">Click to upload</span> or drag and drop
+                          </p>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            JPEG, PNG, WebP (MAX. 5MB)
+                          </p>
+                        </div>
+                        <input 
+                          type="file" 
+                          className="hidden" 
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          onChange={handleImageSelect}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div>
                 <label className="label">Name</label>
@@ -214,7 +344,7 @@ export default function CreatePage() {
               </button>
             </form>
           )}
-        </div>
+        </motion.div>
       </div>
     </Layout>
   );
