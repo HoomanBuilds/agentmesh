@@ -6,17 +6,26 @@ import { supabase } from "@/lib/supabase";
  * POST /api/agent-wallet/withdraw
  * Withdraw MNEE from agent wallet to owner's wallet
  * 
- * Body: { agentId: number, amount?: string }
+ * Body: { agentId: number, ownerAddress: string, amount?: string }
+ * ownerAddress is REQUIRED for ownership verification
  * If amount is not provided, withdraws entire balance
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { agentId, amount, toAddress } = body;
+    const { agentId, amount, toAddress, ownerAddress } = body;
 
     if (agentId === undefined || agentId === null) {
       return NextResponse.json(
         { error: "agentId is required" },
+        { status: 400 }
+      );
+    }
+
+    // SECURITY: Require ownerAddress for verification
+    if (!ownerAddress) {
+      return NextResponse.json(
+        { error: "ownerAddress is required for verification" },
         { status: 400 }
       );
     }
@@ -35,7 +44,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine recipient address
+    // SECURITY: Verify ownership - caller must be the agent owner
+    if (agent.owner_address.toLowerCase() !== ownerAddress.toLowerCase()) {
+      return NextResponse.json(
+        { error: "Not authorized - only the agent owner can withdraw" },
+        { status: 403 }
+      );
+    }
+
+    // Determine recipient address (defaults to owner if not specified)
     const recipient = toAddress || agent.owner_address;
     if (!recipient) {
       return NextResponse.json(

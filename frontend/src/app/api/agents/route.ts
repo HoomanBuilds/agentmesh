@@ -36,12 +36,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({
-      data,
-      total: count || 0,
-      limit,
-      offset,
-    });
+    return NextResponse.json(
+      {
+        data,
+        total: count || 0,
+        limit,
+        offset,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error fetching agents:", error);
     return NextResponse.json(

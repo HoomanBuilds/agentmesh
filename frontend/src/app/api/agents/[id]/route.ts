@@ -23,7 +23,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data });
+    return NextResponse.json(
+      { data },
+      {
+        headers: {
+          // Cache for 5 minutes on CDN
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error fetching agent:", error);
     return NextResponse.json(
@@ -33,11 +41,35 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// PATCH /api/agents/[id] - Update agent (e.g., set onchain_id after contract call)
+// PATCH /api/agents/[id] - Update agent (owner only)
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const body = await request.json();
+
+    // Verify ownership
+    const ownerAddress = body.ownerAddress;
+    if (!ownerAddress) {
+      return NextResponse.json(
+        { error: "ownerAddress required for verification" },
+        { status: 400 }
+      );
+    }
+
+    // Fetch agent to check owner
+    const { data: agent, error: fetchError } = await supabase
+      .from("agents")
+      .select("owner_address")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !agent) {
+      return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    }
+
+    if (agent.owner_address.toLowerCase() !== ownerAddress.toLowerCase()) {
+      return NextResponse.json({ error: "Not the owner" }, { status: 403 });
+    }
 
     // Only allow updating specific fields
     const allowedFields = [
