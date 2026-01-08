@@ -1,5 +1,5 @@
 {
-  "address": "0xDd7bA7620A520943d9aBDb60ef98Fa23D590080D",
+  "address": "0x3C99635c89c4e4EE6c85ec7E300C961f6634Ade0",
   "abi": [
     {
       "inputs": [
@@ -210,6 +210,11 @@
             {
               "internalType": "address",
               "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "wallet",
               "type": "address"
             },
             {

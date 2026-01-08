@@ -14,15 +14,30 @@ CREATE TABLE agents (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Jobs table
+-- Jobs table (payment history for agent-to-agent routing)
 CREATE TABLE jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  job_id TEXT UNIQUE NOT NULL,
-  agent_uuid UUID REFERENCES agents(id),
-  caller_address TEXT NOT NULL,
-  input JSONB,
-  output JSONB,
-  status TEXT DEFAULT 'pending',
+  job_id TEXT UNIQUE NOT NULL,           -- On-chain job ID
+  
+  -- Agent info
+  caller_agent_id UUID REFERENCES agents(id),
+  provider_agent_id UUID REFERENCES agents(id),
+  caller_onchain_id INTEGER,
+  provider_onchain_id INTEGER,
+  
+  -- User info  
+  user_address TEXT NOT NULL,            -- Who initiated the chat
+  
+  -- Payment info
+  amount TEXT NOT NULL,                  -- MNEE amount paid
+  tx_hash TEXT,                          -- Transaction hash
+  
+  -- Request/Response
+  input TEXT,                            -- User's message
+  output TEXT,                           -- Agent's response
+  
+  -- Status
+  status TEXT DEFAULT 'pending',         -- pending, completed, failed
   created_at TIMESTAMPTZ DEFAULT now(),
   completed_at TIMESTAMPTZ
 );
@@ -30,8 +45,10 @@ CREATE TABLE jobs (
 -- Indexes for performance
 CREATE INDEX idx_agents_owner ON agents(owner_address);
 CREATE INDEX idx_agents_active ON agents(active);
-CREATE INDEX idx_jobs_agent ON jobs(agent_uuid);
-CREATE INDEX idx_jobs_status ON jobs(status);
+CREATE INDEX idx_jobs_provider ON jobs(provider_agent_id);
+CREATE INDEX idx_jobs_caller ON jobs(caller_agent_id);
+CREATE INDEX idx_jobs_user ON jobs(user_address);
+CREATE INDEX idx_jobs_created ON jobs(created_at DESC);
 
 -- Enable Row Level Security (optional but recommended)
 ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
@@ -50,3 +67,7 @@ CREATE POLICY "Anyone can create jobs" ON jobs
 
 CREATE POLICY "Anyone can view jobs" ON jobs
   FOR SELECT USING (true);
+
+-- RLS allows updates but API checks agent.owner_address matches request
+CREATE POLICY "Anyone can update agents" ON agents
+  FOR UPDATE USING (true) WITH CHECK (true);

@@ -1,5 +1,5 @@
 {
-  "address": "0xB55a7AC0dD6464599E2D6332CfBe5E721ff14b30",
+  "address": "0x3B581B73b7dD01D7CeCBe7A6d87980c3AfC145e8",
   "abi": [
     {
       "inputs": [],
@@ -14,6 +14,11 @@
     {
       "inputs": [],
       "name": "InvalidPrice",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidWallet",
       "type": "error"
     },
     {
@@ -61,6 +66,12 @@
           "indexed": true,
           "internalType": "address",
           "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "wallet",
           "type": "address"
         },
         {
@@ -170,6 +181,11 @@
               "type": "address"
             },
             {
+              "internalType": "address",
+              "name": "wallet",
+              "type": "address"
+            },
+            {
               "internalType": "uint256",
               "name": "pricePerCall",
               "type": "uint256"
@@ -218,6 +234,11 @@
             {
               "internalType": "address",
               "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "wallet",
               "type": "address"
             },
             {
@@ -296,6 +317,25 @@
       "inputs": [
         {
           "internalType": "uint256",
+          "name": "agentId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getAgentWallet",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
           "name": "offset",
           "type": "uint256"
         },
@@ -312,6 +352,11 @@
             {
               "internalType": "address",
               "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "wallet",
               "type": "address"
             },
             {
@@ -456,6 +501,11 @@
           "internalType": "string",
           "name": "metadataURI",
           "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "wallet",
+          "type": "address"
         }
       ],
       "name": "registerAgent",
