@@ -224,93 +224,112 @@ export default function AgentDetailPage() {
                 </div>
               </div>
 
-              {/* Agent Wallet */}
+              {/* Agent Wallet - end of right column */}
               {agent.onchain_id !== null && (
                 <div className="mb-6">
                   <AgentWallet agentId={agent.onchain_id} isOwner={isOwner} ownerAddress={address} />
                 </div>
               )}
+            </div>
+          </div>
 
-              {/* System Prompt */}
-              {agent.system_prompt && (
-                <div className="card p-6 mb-6">
-                  <h3 className="text-lg font-semibold mb-4">System Prompt</h3>
-                  <div className="bg-[var(--bg-tertiary)] rounded-lg p-4 text-sm text-[var(--text-secondary)] whitespace-pre-wrap max-h-48 overflow-auto">
-                    {agent.system_prompt}
-                  </div>
-                </div>
-              )}
+          {/* Transaction History - Full Width Below Grid */}
+          <div className="mt-8">
+            <div className="card overflow-hidden">
+              <button
+                onClick={() => setIsTransactionsOpen(!isTransactionsOpen)}
+                className="w-full p-6 flex items-center justify-between hover:bg-[var(--bg-tertiary)] transition-colors"
+              >
+                <h3 className="text-lg font-semibold">Transaction History</h3>
+                {isTransactionsOpen ? (
+                  <ChevronUp className="w-5 h-5 text-[var(--text-muted)]" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-[var(--text-muted)]" />
+                )}
+              </button>
 
-              {/* Transaction History - Collapsible */}
-              <div className="card overflow-hidden">
-                <button
-                  onClick={() => setIsTransactionsOpen(!isTransactionsOpen)}
-                  className="w-full p-6 flex items-center justify-between hover:bg-[var(--bg-tertiary)] transition-colors"
-                >
-                  <h3 className="text-lg font-semibold">Transaction History</h3>
-                  {isTransactionsOpen ? (
-                    <ChevronUp className="w-5 h-5 text-[var(--text-muted)]" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-[var(--text-muted)]" />
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {isTransactionsOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-6 pb-6 space-y-3">
-                        {transactionsLoading ? (
-                          <div className="text-center py-8 text-[var(--text-muted)]">
-                            Loading transactions...
-                          </div>
-                        ) : transactions.length > 0 ? (
-                          transactions.map((tx) => (
-                            <div
-                              key={tx.id}
-                              className="flex items-center gap-4 p-4 bg-[var(--bg-tertiary)] rounded-lg"
-                            >
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                tx.type === "earned" 
-                                  ? "bg-green-500/10 text-green-500" 
-                                  : "bg-orange-500/10 text-orange-500"
-                              }`}>
-                                {tx.type === "earned" ? (
-                                  <ArrowDownRight className="w-5 h-5" />
-                                ) : (
-                                  <ArrowUpRight className="w-5 h-5" />
-                                )}
-                              </div>
-                              <div className="flex-1">
-                                <div className="font-medium">
-                                  {tx.type === "earned" ? "Received from" : "Paid to"} {tx.counterparty.name}
-                                </div>
-                                <div className="text-xs text-[var(--text-muted)]">
-                                  {tx.description} • {new Date(tx.createdAt).toLocaleDateString()}
-                                </div>
-                              </div>
-                              <div className={`font-semibold ${
-                                tx.type === "earned" ? "text-green-500" : "text-orange-500"
-                              }`}>
-                                {tx.type === "earned" ? "+" : "-"}{tx.amount} MNEE
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-center py-8 text-[var(--text-muted)]">
-                            No transactions yet
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <AnimatePresence>
+                {isTransactionsOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 space-y-3">
+                      {transactionsLoading ? (
+                        <div className="text-center py-8 text-[var(--text-muted)]">
+                          Loading transactions...
+                        </div>
+                      ) : transactions.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-[var(--border-primary)]">
+                                <th className="text-left py-3 px-4 text-xs font-medium text-[var(--text-muted)] uppercase">Type</th>
+                                <th className="text-left py-3 px-4 text-xs font-medium text-[var(--text-muted)] uppercase">Counterparty</th>
+                                <th className="text-left py-3 px-4 text-xs font-medium text-[var(--text-muted)] uppercase">Date & Time</th>
+                                <th className="text-left py-3 px-4 text-xs font-medium text-[var(--text-muted)] uppercase">Tx Hash</th>
+                                <th className="text-right py-3 px-4 text-xs font-medium text-[var(--text-muted)] uppercase">Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[var(--border-primary)]">
+                              {transactions.map((tx) => (
+                                <tr key={tx.id} className="hover:bg-[var(--bg-tertiary)] transition-colors">
+                                  <td className="py-4 px-4">
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                        tx.type === "earned" 
+                                          ? "bg-green-500/10 text-green-500" 
+                                          : "bg-orange-500/10 text-orange-500"
+                                      }`}>
+                                        {tx.type === "earned" ? (
+                                          <ArrowDownRight className="w-4 h-4" />
+                                        ) : (
+                                          <ArrowUpRight className="w-4 h-4" />
+                                        )}
+                                      </div>
+                                      <span className="text-sm font-medium capitalize">{tx.type}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-4 px-4 text-sm">{tx.counterparty.name}</td>
+                                  <td className="py-4 px-4 text-sm text-[var(--text-secondary)]">
+                                    {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </td>
+                                  <td className="py-4 px-4">
+                                    {tx.txHash ? (
+                                      <a 
+                                        href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-[var(--accent-primary)] hover:underline font-mono"
+                                      >
+                                        {tx.txHash.slice(0, 8)}...{tx.txHash.slice(-6)}
+                                      </a>
+                                    ) : (
+                                      <span className="text-sm text-[var(--text-muted)]">—</span>
+                                    )}
+                                  </td>
+                                  <td className={`py-4 px-4 text-right font-semibold ${
+                                    tx.type === "earned" ? "text-green-500" : "text-orange-500"
+                                  }`}>
+                                    {tx.type === "earned" ? "+" : "-"}{tx.amount} MNEE
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-[var(--text-muted)]">
+                          No transactions yet
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </motion.div>
