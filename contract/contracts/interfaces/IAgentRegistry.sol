@@ -8,6 +8,7 @@ pragma solidity ^0.8.20;
 interface IAgentRegistry {
     struct Agent {
         address owner;
+        address wallet;          // Derived agent wallet for receiving payments
         uint256 pricePerCall;
         string metadataURI;
         bool active;
@@ -18,6 +19,7 @@ interface IAgentRegistry {
     event AgentRegistered(
         uint256 indexed agentId,
         address indexed owner,
+        address wallet,
         uint256 pricePerCall,
         string metadataURI
     );
@@ -31,7 +33,8 @@ interface IAgentRegistry {
 
     function registerAgent(
         uint256 pricePerCall,
-        string calldata metadataURI
+        string calldata metadataURI,
+        address wallet
     ) external returns (uint256 agentId);
 
     function updateAgent(
@@ -48,6 +51,7 @@ interface IAgentRegistry {
 
     function getAgent(uint256 agentId) external view returns (Agent memory);
     function getAgentOwner(uint256 agentId) external view returns (address);
+    function getAgentWallet(uint256 agentId) external view returns (address);
     function getAgentPrice(uint256 agentId) external view returns (uint256);
     function isAgentActive(uint256 agentId) external view returns (bool);
     function agentCount() external view returns (uint256);

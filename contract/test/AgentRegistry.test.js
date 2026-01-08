@@ -3,7 +3,7 @@ const { ethers, deployments } = require("hardhat")
 
 describe("AgentRegistry", function () {
     let agentRegistry, mockMNEE
-    let deployer, user1, user2, router
+    let deployer, user1, user2, router, wallet1, wallet2
     const PRICE_PER_CALL = ethers.parseEther("0.05")
 
     beforeEach(async function () {
@@ -12,6 +12,8 @@ describe("AgentRegistry", function () {
         user1 = signers[1]
         user2 = signers[2]
         router = signers[3] // Simulating router
+        wallet1 = signers[4] // Agent wallet for user1
+        wallet2 = signers[5] // Agent wallet for user2
 
         await deployments.fixture(["mocks", "registry"])
 
@@ -37,23 +39,28 @@ describe("AgentRegistry", function () {
     })
 
     describe("Agent Registration", function () {
-        it("should register a new agent", async function () {
+        it("should register a new agent with wallet", async function () {
             const metadataURI = "https://api.agentpay.io/agents/1/metadata"
 
-            const tx = await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, metadataURI)
+            const tx = await agentRegistry
+                .connect(user1)
+                .registerAgent(PRICE_PER_CALL, metadataURI, wallet1.address)
 
             await expect(tx)
                 .to.emit(agentRegistry, "AgentRegistered")
-                .withArgs(0, user1.address, PRICE_PER_CALL, metadataURI)
+                .withArgs(0, user1.address, wallet1.address, PRICE_PER_CALL, metadataURI)
         })
 
-        it("should store agent data correctly", async function () {
+        it("should store agent data correctly including wallet", async function () {
             const metadataURI = "https://api.agentpay.io/agents/1/metadata"
 
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, metadataURI)
+            await agentRegistry
+                .connect(user1)
+                .registerAgent(PRICE_PER_CALL, metadataURI, wallet1.address)
 
             const agent = await agentRegistry.getAgent(0)
             expect(agent.owner).to.equal(user1.address)
+            expect(agent.wallet).to.equal(wallet1.address)
             expect(agent.pricePerCall).to.equal(PRICE_PER_CALL)
             expect(agent.metadataURI).to.equal(metadataURI)
             expect(agent.active).to.equal(true)
@@ -63,21 +70,39 @@ describe("AgentRegistry", function () {
 
         it("should revert if price is zero", async function () {
             await expect(
-                agentRegistry.connect(user1).registerAgent(0, "uri"),
+                agentRegistry.connect(user1).registerAgent(0, "uri", wallet1.address),
             ).to.be.revertedWithCustomError(agentRegistry, "InvalidPrice")
         })
 
+        it("should revert if wallet is zero address", async function () {
+            await expect(
+                agentRegistry
+                    .connect(user1)
+                    .registerAgent(PRICE_PER_CALL, "uri", ethers.ZeroAddress),
+            ).to.be.revertedWithCustomError(agentRegistry, "InvalidWallet")
+        })
+
         it("should increment agent count", async function () {
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri1")
-            await agentRegistry.connect(user2).registerAgent(PRICE_PER_CALL, "uri2")
+            await agentRegistry
+                .connect(user1)
+                .registerAgent(PRICE_PER_CALL, "uri1", wallet1.address)
+            await agentRegistry
+                .connect(user2)
+                .registerAgent(PRICE_PER_CALL, "uri2", wallet2.address)
 
             expect(await agentRegistry.agentCount()).to.equal(2)
         })
 
         it("should track agents by owner", async function () {
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri1")
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri2")
-            await agentRegistry.connect(user2).registerAgent(PRICE_PER_CALL, "uri3")
+            await agentRegistry
+                .connect(user1)
+                .registerAgent(PRICE_PER_CALL, "uri1", wallet1.address)
+            await agentRegistry
+                .connect(user1)
+                .registerAgent(PRICE_PER_CALL, "uri2", wallet1.address)
+            await agentRegistry
+                .connect(user2)
+                .registerAgent(PRICE_PER_CALL, "uri3", wallet2.address)
 
             const user1Agents = await agentRegistry.getAgentsByOwner(user1.address)
             const user2Agents = await agentRegistry.getAgentsByOwner(user2.address)
@@ -89,7 +114,7 @@ describe("AgentRegistry", function () {
 
     describe("Agent Update", function () {
         beforeEach(async function () {
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri")
+            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri", wallet1.address)
         })
 
         it("should update agent price", async function () {
@@ -147,7 +172,7 @@ describe("AgentRegistry", function () {
 
     describe("Agent Stats", function () {
         beforeEach(async function () {
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri")
+            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri", wallet1.address)
         })
 
         it("should increment agent stats (only router)", async function () {
@@ -179,14 +204,25 @@ describe("AgentRegistry", function () {
 
     describe("View Functions", function () {
         beforeEach(async function () {
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri1")
-            await agentRegistry.connect(user2).registerAgent(PRICE_PER_CALL, "uri2")
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri3")
+            await agentRegistry
+                .connect(user1)
+                .registerAgent(PRICE_PER_CALL, "uri1", wallet1.address)
+            await agentRegistry
+                .connect(user2)
+                .registerAgent(PRICE_PER_CALL, "uri2", wallet2.address)
+            await agentRegistry
+                .connect(user1)
+                .registerAgent(PRICE_PER_CALL, "uri3", wallet1.address)
         })
 
         it("should get agent owner", async function () {
             expect(await agentRegistry.getAgentOwner(0)).to.equal(user1.address)
             expect(await agentRegistry.getAgentOwner(1)).to.equal(user2.address)
+        })
+
+        it("should get agent wallet", async function () {
+            expect(await agentRegistry.getAgentWallet(0)).to.equal(wallet1.address)
+            expect(await agentRegistry.getAgentWallet(1)).to.equal(wallet2.address)
         })
 
         it("should get agent price", async function () {

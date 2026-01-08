@@ -3,7 +3,7 @@ const { ethers, deployments } = require("hardhat")
 
 describe("AgentRouter", function () {
     let agentRegistry, agentEscrow, agentRouter, mockMNEE
-    let deployer, user1, user2, user3
+    let deployer, user1, user2, user3, wallet1, wallet2
     const PRICE_PER_CALL = ethers.parseEther("0.05")
     const JOB_TIMEOUT = 3600
 
@@ -13,6 +13,8 @@ describe("AgentRouter", function () {
         user1 = signers[1]
         user2 = signers[2]
         user3 = signers[3]
+        wallet1 = signers[4] // Agent wallet for user1's agent
+        wallet2 = signers[5] // Agent wallet for user2's agent
 
         // Deploy all contracts
         await deployments.fixture(["all"])
@@ -57,8 +59,8 @@ describe("AgentRouter", function () {
 
     describe("Service Request", function () {
         beforeEach(async function () {
-            // Register an agent owned by user1
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri")
+            // Register an agent owned by user1 with wallet1 as payment recipient
+            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri", wallet1.address)
         })
 
         it("should create a job and lock MNEE", async function () {
@@ -127,7 +129,8 @@ describe("AgentRouter", function () {
         let jobId
 
         beforeEach(async function () {
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri")
+            // Register agent with wallet1 as payment recipient
+            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri", wallet1.address)
             await mockMNEE.connect(user2).approve(agentEscrow.target, PRICE_PER_CALL)
 
             const tx = await agentRouter.connect(user2).requestService(0, 0)
@@ -138,13 +141,19 @@ describe("AgentRouter", function () {
             jobId = event.args[0]
         })
 
-        it("should confirm job and release MNEE to provider", async function () {
-            const user1BalanceBefore = await mockMNEE.balanceOf(user1.address)
+        it("should confirm job and release MNEE to agent WALLET (not owner)", async function () {
+            // wallet1 is the agent's wallet, user1 is the owner
+            const walletBalanceBefore = await mockMNEE.balanceOf(wallet1.address)
+            const ownerBalanceBefore = await mockMNEE.balanceOf(user1.address)
 
             await agentRouter.connect(user2).confirmJob(jobId)
 
-            const user1BalanceAfter = await mockMNEE.balanceOf(user1.address)
-            expect(user1BalanceAfter - user1BalanceBefore).to.equal(PRICE_PER_CALL)
+            const walletBalanceAfter = await mockMNEE.balanceOf(wallet1.address)
+            const ownerBalanceAfter = await mockMNEE.balanceOf(user1.address)
+
+            // Payment goes to wallet, NOT owner
+            expect(walletBalanceAfter - walletBalanceBefore).to.equal(PRICE_PER_CALL)
+            expect(ownerBalanceAfter).to.equal(ownerBalanceBefore) // Owner unchanged
         })
 
         it("should update agent stats on confirmation", async function () {
@@ -182,7 +191,7 @@ describe("AgentRouter", function () {
         let jobId
 
         beforeEach(async function () {
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri")
+            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri", wallet1.address)
             await mockMNEE.connect(user2).approve(agentEscrow.target, PRICE_PER_CALL)
 
             const tx = await agentRouter.connect(user2).requestService(0, 0)
@@ -213,7 +222,7 @@ describe("AgentRouter", function () {
         let jobId
 
         beforeEach(async function () {
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri")
+            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri", wallet1.address)
             await mockMNEE.connect(user2).approve(agentEscrow.target, PRICE_PER_CALL)
 
             const tx = await agentRouter.connect(user2).requestService(0, 0)
@@ -231,16 +240,16 @@ describe("AgentRouter", function () {
             )
         })
 
-        it("should expire job after timeout and release to provider", async function () {
+        it("should expire job after timeout and release to agent WALLET", async function () {
             await ethers.provider.send("evm_increaseTime", [JOB_TIMEOUT + 1])
             await ethers.provider.send("evm_mine")
 
-            const user1BalanceBefore = await mockMNEE.balanceOf(user1.address)
+            const walletBalanceBefore = await mockMNEE.balanceOf(wallet1.address)
 
             await agentRouter.connect(user3).expireJob(jobId)
 
-            const user1BalanceAfter = await mockMNEE.balanceOf(user1.address)
-            expect(user1BalanceAfter - user1BalanceBefore).to.equal(PRICE_PER_CALL)
+            const walletBalanceAfter = await mockMNEE.balanceOf(wallet1.address)
+            expect(walletBalanceAfter - walletBalanceBefore).to.equal(PRICE_PER_CALL)
         })
 
         it("should allow anyone to expire after timeout", async function () {
@@ -265,12 +274,13 @@ describe("AgentRouter", function () {
 
     describe("View Functions", function () {
         beforeEach(async function () {
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri")
+            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri", wallet1.address)
         })
 
         it("should get agent via router", async function () {
             const agent = await agentRouter.getAgent(0)
             expect(agent.owner).to.equal(user1.address)
+            expect(agent.wallet).to.equal(wallet1.address)
         })
 
         it("should get agent count via router", async function () {
@@ -278,7 +288,9 @@ describe("AgentRouter", function () {
         })
 
         it("should get agents by owner via router", async function () {
-            await agentRegistry.connect(user1).registerAgent(PRICE_PER_CALL, "uri2")
+            await agentRegistry
+                .connect(user1)
+                .registerAgent(PRICE_PER_CALL, "uri2", wallet1.address)
 
             const agentIds = await agentRouter.getAgentsByOwner(user1.address)
             expect(agentIds.length).to.equal(2)

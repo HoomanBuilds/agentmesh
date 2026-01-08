@@ -29,6 +29,7 @@ contract AgentRegistry is IAgentRegistry, Ownable {
     error AgentNotFound();
     error NotAgentOwner();
     error InvalidPrice();
+    error InvalidWallet();
     error OnlyRouter();
 
     // ============ Modifiers ============
@@ -58,18 +59,22 @@ contract AgentRegistry is IAgentRegistry, Ownable {
      * @notice Register a new agent
      * @param pricePerCall Price per service call in MNEE (wei)
      * @param metadataURI URI pointing to agent metadata JSON
+     * @param wallet Address of the agent's wallet for receiving payments
      * @return agentId The ID of the newly registered agent
      */
     function registerAgent(
         uint256 pricePerCall,
-        string calldata metadataURI
+        string calldata metadataURI,
+        address wallet
     ) external returns (uint256 agentId) {
         if (pricePerCall == 0) revert InvalidPrice();
+        if (wallet == address(0)) revert InvalidWallet();
 
         agentId = agentCount++;
 
         _agents[agentId] = Agent({
             owner: msg.sender,
+            wallet: wallet,
             pricePerCall: pricePerCall,
             metadataURI: metadataURI,
             active: true,
@@ -79,7 +84,7 @@ contract AgentRegistry is IAgentRegistry, Ownable {
 
         _ownerAgents[msg.sender].push(agentId);
 
-        emit AgentRegistered(agentId, msg.sender, pricePerCall, metadataURI);
+        emit AgentRegistered(agentId, msg.sender, wallet, pricePerCall, metadataURI);
     }
 
     /**
@@ -137,6 +142,10 @@ contract AgentRegistry is IAgentRegistry, Ownable {
 
     function getAgentOwner(uint256 agentId) external view returns (address) {
         return _agents[agentId].owner;
+    }
+
+    function getAgentWallet(uint256 agentId) external view returns (address) {
+        return _agents[agentId].wallet;
     }
 
     function getAgentPrice(uint256 agentId) external view returns (uint256) {

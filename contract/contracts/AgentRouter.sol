@@ -98,7 +98,7 @@ contract AgentRouter is Ownable {
     }
 
     /**
-     * @notice Confirm job completion (releases MNEE to provider)
+     * @notice Confirm job completion (releases MNEE to provider wallet)
      * @param jobId ID of the job to confirm
      */
     function confirmJob(bytes32 jobId) external {
@@ -107,10 +107,10 @@ contract AgentRouter is Ownable {
         if (job.callerWallet == address(0)) revert JobNotFound();
         if (job.callerWallet != msg.sender) revert NotJobCaller();
 
-        address providerOwner = registry.getAgentOwner(job.providerAgentId);
+        address providerWallet = registry.getAgentWallet(job.providerAgentId);
 
-        // Complete job in escrow
-        escrow.completeJob(jobId, providerOwner);
+        // Complete job in escrow - pays to agent wallet
+        escrow.completeJob(jobId, providerWallet);
 
         registry.incrementAgentStats(job.providerAgentId, job.amount);
     }
@@ -129,7 +129,7 @@ contract AgentRouter is Ownable {
     }
 
     /**
-     * @notice Expire a job after timeout (releases MNEE to provider)
+     * @notice Expire a job after timeout (releases MNEE to provider wallet)
      * @dev Anyone can call this after the timeout period
      * @param jobId ID of the job to expire
      */
@@ -138,10 +138,10 @@ contract AgentRouter is Ownable {
 
         if (job.callerWallet == address(0)) revert JobNotFound();
 
-        address providerOwner = registry.getAgentOwner(job.providerAgentId);
+        address providerWallet = registry.getAgentWallet(job.providerAgentId);
 
-        // Expire job in escrow
-        escrow.expireJob(jobId, providerOwner);
+        // Expire job in escrow - pays to agent wallet
+        escrow.expireJob(jobId, providerWallet);
 
         registry.incrementAgentStats(job.providerAgentId, job.amount);
     }
