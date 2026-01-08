@@ -8,9 +8,10 @@ import { LoadingSpinner } from "@/components/ui";
 interface AgentWalletProps {
   agentId: number;
   isOwner: boolean;
+  ownerAddress?: string;
 }
 
-export default function AgentWallet({ agentId, isOwner }: AgentWalletProps) {
+export default function AgentWallet({ agentId, isOwner, ownerAddress }: AgentWalletProps) {
   const { wallet, isLoading, refetch } = useAgentWallet(agentId);
   const { withdraw, isWithdrawing, error: withdrawError, txHash } = useAgentWithdraw();
   const [copied, setCopied] = useState(false);
@@ -24,9 +25,13 @@ export default function AgentWallet({ agentId, isOwner }: AgentWalletProps) {
   };
 
   const handleWithdraw = async () => {
+    if (!ownerAddress) {
+      alert("Owner address not available");
+      return;
+    }
     if (!confirm("Withdraw all MNEE to your wallet?")) return;
     
-    const success = await withdraw(agentId);
+    const success = await withdraw(agentId, ownerAddress);
     if (success) {
       refetch();
     }
@@ -50,7 +55,7 @@ export default function AgentWallet({ agentId, isOwner }: AgentWalletProps) {
           Agent Wallet
         </h3>
         <button 
-          onClick={refetch}
+          onClick={() => refetch()}
           className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
         >
           <RefreshCw className="w-4 h-4" />

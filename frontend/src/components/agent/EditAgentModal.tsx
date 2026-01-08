@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Save } from "lucide-react";
+import { X, Save, Upload, Image as ImageIcon } from "lucide-react";
 import { Agent } from "@/types";
 import { LoadingSpinner } from "@/components/ui";
 import { formatEther, parseEther } from "viem";
+import imageCompression from "browser-image-compression";
 
 interface EditAgentModalProps {
   agent: Agent;
@@ -27,6 +28,8 @@ export default function EditAgentModal({
     image_url: agent.image_url || "",
     active: agent.active,
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(agent.image_url || null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -40,9 +43,42 @@ export default function EditAgentModal({
         image_url: agent.image_url || "",
         active: agent.active,
       });
+      setImagePreview(agent.image_url || null);
+      setImageFile(null);
       setError("");
     }
   }, [isOpen, agent]);
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Preview
+      const objectUrl = URL.createObjectURL(file);
+      setImagePreview(objectUrl);
+
+      try {
+        const options = {
+          maxSizeMB: 0.1, 
+          maxWidthOrHeight: 512,
+          useWebWorker: true,
+          fileType: "image/jpeg"
+        };
+        
+        const compressedFile = await imageCompression(file, options);
+        setImageFile(compressedFile);
+      } catch (error) {
+        console.error("Error compressing image:", error);
+        setError("Failed to process image. Please try another one.");
+      }
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setForm(prev => ({ ...prev, image_url: "" }));
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,15 +86,36 @@ export default function EditAgentModal({
     setError("");
 
     try {
+      let finalImageUrl = form.image_url;
+
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        formData.append("agentId", agent.id);
+
+        const uploadRes = await fetch("/api/upload-image", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          finalImageUrl = uploadData.imageUrl;
+        } else {
+          console.error("Failed to upload image");
+        }
+      }
+
       const res = await fetch(`/api/agents/${agent.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          ownerAddress: agent.owner_address,
           name: form.name,
           description: form.description || null,
           system_prompt: form.system_prompt,
           price_per_call: parseEther(form.price).toString(),
-          image_url: form.image_url || null,
+          image_url: finalImageUrl || null,
           active: form.active,
         }),
       });
@@ -110,6 +167,44 @@ export default function EditAgentModal({
             </div>
           )}
 
+          {/* Image Upload */}
+          <div>
+            <label className="label">Agent Photo</label>
+            <div className="mt-2">
+              {imagePreview ? (
+                <div className="relative w-24 h-24">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover rounded-xl border border-[var(--border-primary)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-[var(--border-primary)] border-dashed rounded-xl cursor-pointer hover:bg-[var(--bg-tertiary)] transition-colors">
+                  <div className="flex flex-col items-center justify-center pt-2 pb-3">
+                    <Upload className="w-6 h-6 mb-1 text-[var(--text-muted)]" />
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Click to upload photo
+                    </p>
+                  </div>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleImageSelect}
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+
           <div>
             <label className="label">Name</label>
             <input
@@ -152,17 +247,6 @@ export default function EditAgentModal({
               onChange={(e) => setForm({ ...form, price: e.target.value })}
               className="input"
               required
-            />
-          </div>
-
-          <div>
-            <label className="label">Image URL (optional)</label>
-            <input
-              type="url"
-              value={form.image_url}
-              onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-              placeholder="https://example.com/image.png"
-              className="input"
             />
           </div>
 
