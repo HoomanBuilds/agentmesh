@@ -52,16 +52,16 @@ export default function ChatMessages({
     code: ({ node, inline, className, children, ...props }: any) => {
       const match = /language-(\w+)/.exec(className || "");
       return !inline && match ? (
-        <div className="rounded-lg overflow-hidden my-2 bg-[var(--bg-primary)] border border-[var(--border-primary)]">
+        <div className="rounded-lg overflow-hidden my-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] max-w-full">
           <div className="flex items-center justify-between px-3 py-1 bg-[var(--bg-surface)] border-b border-[var(--border-primary)]">
             <span className="text-xs text-[var(--accent-primary)] font-mono">
               {match[1]}
             </span>
           </div>
-          <div className="p-3 overflow-x-auto">
-            <code className={`${className} text-sm`} {...props}>
+          <div className="p-3 overflow-x-auto max-w-full">
+            <pre className="m-0"><code className={`${className} text-sm whitespace-pre`} {...props}>
               {children}
-            </code>
+            </code></pre>
           </div>
         </div>
       ) : (
@@ -149,7 +149,7 @@ export default function ChatMessages({
           className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
         >
           <div
-            className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+            className={`max-w-[70%] rounded-2xl px-4 py-3 overflow-hidden ${
               message.role === "user"
                 ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-secondary)]"
                 : "bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)]"
@@ -170,7 +170,8 @@ export default function ChatMessages({
                   )}
                 </div>
               )}
-              <div className="flex-1 prose prose-sm max-w-none prose-invert">
+              <div className="flex-1 prose prose-sm max-w-none prose-invert break-words overflow-hidden">
+                {/* Always show the markdown message */}
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={markdownComponents}
@@ -201,21 +202,44 @@ export default function ChatMessages({
                   </div>
                 )}
 
-                {/* Confirmation buttons */}
-                {message.routing?.needsConfirmation && pendingConfirmation && (
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      onClick={onConfirmRouting}
-                      className="btn-primary text-sm px-4 py-2"
-                    >
-                      ✓ Yes, Pay & Proceed
-                    </button>
-                    <button
-                      onClick={onCancelRouting}
-                      className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg text-sm font-medium hover:bg-[var(--bg-tertiary)] transition-colors border border-[var(--border-primary)]"
-                    >
-                      Cancel
-                    </button>
+                {/* Routing confirmation card */}
+                {message.routing?.needsConfirmation && message.routing?.pendingAgent && pendingConfirmation && (
+                  <div className="mt-4 p-4 bg-[var(--bg-primary)] rounded-xl border border-[var(--border-secondary)]">
+                    {/* Agent Name as Header */}
+                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-[var(--border-primary)]">
+                      <div className="w-8 h-8 rounded-full bg-[var(--accent-primary)]/20 flex items-center justify-center">
+                        <ArrowRight className="w-4 h-4 text-[var(--accent-primary)]" />
+                      </div>
+                      <span className="font-semibold text-lg text-[var(--text-primary)]">{message.routing.pendingAgent.name}</span>
+                    </div>
+                    
+                    <div className="space-y-3 mb-4">
+                      {message.routing.pendingAgent.description && (
+                        <div>
+                          <div className="text-xs text-[var(--text-muted)] mb-1">Description</div>
+                          <div className="text-sm text-[var(--text-secondary)]">{message.routing.pendingAgent.description}</div>
+                        </div>
+                      )}
+                      <div className="pt-3 border-t border-[var(--border-primary)]">
+                        <div className="text-xs text-[var(--text-muted)] mb-1">Price</div>
+                        <div className="text-lg font-semibold text-[var(--accent-primary)]">{message.routing.pendingAgent.price} MNEE</div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={onConfirmRouting}
+                        className="flex-1 btn-primary text-sm px-4 py-2.5"
+                      >
+                        ✓ Pay & Consult
+                      </button>
+                      <button
+                        onClick={onCancelRouting}
+                        className="flex-1 px-4 py-2.5 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg text-sm font-medium hover:bg-[var(--bg-tertiary)] transition-colors border border-[var(--border-primary)]"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

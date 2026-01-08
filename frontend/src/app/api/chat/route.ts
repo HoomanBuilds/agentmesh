@@ -181,14 +181,19 @@ Select the best agent (1-${otherAgents.length}) or 0 if none suitable.`,
             console.warn("Balance check failed:", e);
           }
 
+          const confirmationResponse = hasBalance 
+            ? `I found a specialist who can help with your request!`
+            : `I found a specialist who can help, but there's insufficient balance in the agent wallet to pay for this service.`;
+
+          try {
+            await storeMessage(agent.onchain_id, userAddress, "user", message, sessionId);
+            await storeMessage(agent.onchain_id, userAddress, "assistant", confirmationResponse, sessionId);
+          } catch (storeError) {
+            console.warn("Failed to store routing messages:", storeError);
+          }
+
           return NextResponse.json({
-            response: `I found a specialist who can help with your request!
-
-**Agent:** ${targetAgent.name}
-**Description:** ${targetAgent.description || "Expert AI agent"}
-**Price:** ${targetPriceEth} MNEE
-
-${hasBalance ? "Would you like me to proceed and consult this agent? Reply **'yes'** to confirm." : "⚠️ Insufficient balance in agent wallet to pay for this service."}`,
+            response: confirmationResponse,
             agentId,
             sessionId,
             routing: {
@@ -322,6 +327,7 @@ Present this information naturally, acknowledging the consultation.`,
     });
 
     try {
+      await storeMessage(callerAgent.onchain_id, userAddress, "user", "yes", sessionId);
       await storeMessage(callerAgent.onchain_id, userAddress, "assistant", framedResponse, sessionId);
     } catch (storeError) {
       console.warn("Failed to store messages:", storeError);
@@ -329,22 +335,33 @@ Present this information naturally, acknowledging the consultation.`,
 
     // Record job in Supabase for payment history
     try {
-      await supabase.from("jobs").insert({
+      const jobData = {
         job_id: serviceResult.jobId,
         caller_agent_id: callerAgent.id,
         provider_agent_id: targetAgent.id,
         caller_onchain_id: callerAgent.onchain_id,
         provider_onchain_id: targetAgent.onchain_id,
+        caller_address: userAddress, 
         user_address: userAddress,
         amount: targetPriceEth,
         tx_hash: ("hash" in confirmResult) ? confirmResult.hash : null,
-        input: originalMessage,
-        output: targetResponse.text,
+        input: { message: originalMessage }, 
+        output: { response: targetResponse.text },
         status: "completed",
         completed_at: new Date().toISOString(),
-      });
+      };
+      
+      console.log("[DEBUG] Inserting job:", jobData);
+      
+      const { error: insertError } = await supabase.from("jobs").insert(jobData);
+      
+      if (insertError) {
+        console.error("[ERROR] Failed to insert job:", insertError);
+      } else {
+        console.log("[SUCCESS] Job recorded in database");
+      }
     } catch (jobError) {
-      console.warn("Failed to record job:", jobError);
+      console.error("[ERROR] Job insert exception:", jobError);
     }
 
     return NextResponse.json({
