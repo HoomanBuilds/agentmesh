@@ -9,4 +9,5 @@ export { useAgentWallet, useAgentWithdraw } from "./useAgentWallet";
 export { useAgentChat } from "./useAgentChat";
 export { useChat } from "./useChat";
 export { useAgentTransactions } from "./useAgentTransactions";
+export { useOwnerTransactions } from "./useOwnerTransactions";
 

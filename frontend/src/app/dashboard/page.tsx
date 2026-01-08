@@ -2,9 +2,9 @@
 
 import Layout from "@/components/Layout";
 import { Link } from "next-view-transitions";
-import { Plus, TrendingUp, Users, Zap, DollarSign } from "lucide-react";
+import { Plus, TrendingUp, Users, Zap, DollarSign, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useAccount } from "wagmi";
-import { useAgents } from "@/hooks/useAgents";
+import { useAgents, useOwnerTransactions } from "@/hooks";
 import { AgentCard } from "@/components/agent";
 import { SectionLoader, EmptyState, PageHeader } from "@/components/ui";
 import { motion } from "framer-motion";
@@ -25,6 +25,7 @@ const fadeInUp = {
 export default function DashboardPage() {
   const { address, isConnected } = useAccount();
   const { agents, loading } = useAgents(address);
+  const { transactions, stats, loading: txLoading } = useOwnerTransactions(address);
 
   const totalAgents = agents.length;
   const activeAgents = agents.filter((a) => a.active).length;
@@ -148,6 +149,99 @@ export default function DashboardPage() {
               />
             </motion.div>
           )}
+
+          {/* Transaction History */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-12"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Transaction History</h2>
+              <div className="flex gap-4 text-sm">
+                <div className="text-[var(--text-muted)]">
+                  Total Earned: <span className="text-green-500 font-medium">+{stats.totalEarned} MNEE</span>
+                </div>
+                <div className="text-[var(--text-muted)]">
+                  Total Spent: <span className="text-orange-500 font-medium">-{stats.totalSpent} MNEE</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card overflow-hidden">
+              {txLoading ? (
+                <div className="text-center py-8 text-[var(--text-muted)]">
+                  Loading transactions...
+                </div>
+              ) : transactions.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[var(--border-primary)] bg-[var(--bg-tertiary)]">
+                        <th className="text-left py-3 px-4 text-xs font-medium text-[var(--text-muted)] uppercase">Type</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-[var(--text-muted)] uppercase">Agent</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-[var(--text-muted)] uppercase">Counterparty</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-[var(--text-muted)] uppercase">Date & Time</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-[var(--text-muted)] uppercase">Tx Hash</th>
+                        <th className="text-right py-3 px-4 text-xs font-medium text-[var(--text-muted)] uppercase">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border-primary)]">
+                      {transactions.map((tx) => (
+                        <tr key={tx.id} className="hover:bg-[var(--bg-tertiary)] transition-colors">
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                tx.type === "earned" 
+                                  ? "bg-green-500/10 text-green-500" 
+                                  : "bg-orange-500/10 text-orange-500"
+                              }`}>
+                                {tx.type === "earned" ? (
+                                  <ArrowDownRight className="w-4 h-4" />
+                                ) : (
+                                  <ArrowUpRight className="w-4 h-4" />
+                                )}
+                              </div>
+                              <span className="text-sm font-medium capitalize">{tx.type}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-sm font-medium">{tx.ownedAgent.name}</td>
+                          <td className="py-4 px-4 text-sm text-[var(--text-secondary)]">{tx.counterparty.name}</td>
+                          <td className="py-4 px-4 text-sm text-[var(--text-secondary)]">
+                            {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                          <td className="py-4 px-4">
+                            {tx.txHash ? (
+                              <a 
+                                href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-[var(--accent-primary)] hover:underline font-mono"
+                              >
+                                {tx.txHash.slice(0, 8)}...{tx.txHash.slice(-6)}
+                              </a>
+                            ) : (
+                              <span className="text-sm text-[var(--text-muted)]">—</span>
+                            )}
+                          </td>
+                          <td className={`py-4 px-4 text-right font-semibold ${
+                            tx.type === "earned" ? "text-green-500" : "text-orange-500"
+                          }`}>
+                            {tx.type === "earned" ? "+" : "-"}{tx.amount} MNEE
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-[var(--text-muted)]">
+                  No transactions yet. Start chatting with your agents to see activity here.
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
       </div>
     </Layout>

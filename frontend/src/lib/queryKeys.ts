@@ -13,6 +13,10 @@ export const queryKeys = {
   agentWallet: {
     info: (agentId: number) => ["agentWallet", "info", agentId] as const,
   },
+  transactions: {
+    byAgent: (agentId: string) => ["transactions", "byAgent", agentId] as const,
+    byOwner: (owner: string) => ["transactions", "byOwner", owner] as const,
+  },
 };
 
 /**
