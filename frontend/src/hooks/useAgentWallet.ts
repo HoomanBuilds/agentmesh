@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys, cacheConfig } from "@/lib/queryKeys";
 
 interface AgentWalletInfo {
   address: string;
@@ -9,89 +10,96 @@ interface AgentWalletInfo {
   agentId: number;
 }
 
+async function fetchWalletInfo(agentId: number): Promise<AgentWalletInfo> {
+  const res = await fetch(`/api/agent-wallet/info?agentId=${agentId}`);
+  const { data, error } = await res.json();
+  if (error) throw new Error(error);
+  return data;
+}
+
 /**
- * Hook to get agent wallet information
+ * Hook to get agent wallet information with caching (30s stale time)
  */
 export function useAgentWallet(agentId: number | null) {
-  const [wallet, setWallet] = useState<AgentWalletInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchWallet = useCallback(async () => {
-    if (agentId === null) return;
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const res = await fetch(`/api/agent-wallet/info?agentId=${agentId}`);
-      const { data, error: apiError } = await res.json();
-
-      if (apiError) {
-        setError(apiError);
-      } else {
-        setWallet(data);
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch wallet info");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [agentId]);
-
-  useEffect(() => {
-    fetchWallet();
-  }, [fetchWallet]);
+  const { 
+    data: wallet = null, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery({
+    queryKey: queryKeys.agentWallet.info(agentId || 0),
+    queryFn: () => fetchWalletInfo(agentId!),
+    staleTime: cacheConfig.wallet.staleTime,
+    gcTime: cacheConfig.wallet.gcTime,
+    refetchOnWindowFocus: true, 
+    enabled: agentId !== null,
+  });
 
   return {
     wallet,
     isLoading,
-    error,
-    refetch: fetchWallet,
+    error: error?.message || null,
+    refetch,
+    // Force refresh after transaction
+    invalidate: () => queryClient.invalidateQueries({ 
+      queryKey: queryKeys.agentWallet.info(agentId || 0) 
+    }),
   };
 }
 
 /**
  * Hook to withdraw from agent wallet
+ * SECURITY: Requires ownerAddress for verification
  */
 export function useAgentWithdraw() {
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const withdraw = useCallback(async (agentId: number, amount?: string, toAddress?: string) => {
-    try {
-      setIsWithdrawing(true);
-      setError(null);
-      setTxHash(null);
-
+  const mutation = useMutation({
+    mutationFn: async ({ 
+      agentId, 
+      ownerAddress,
+      amount, 
+      toAddress 
+    }: { 
+      agentId: number; 
+      ownerAddress: string;
+      amount?: string; 
+      toAddress?: string 
+    }) => {
       const res = await fetch("/api/agent-wallet/withdraw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId, amount, toAddress }),
+        body: JSON.stringify({ agentId, ownerAddress, amount, toAddress }),
       });
 
-      const { data, error: apiError } = await res.json();
+      const { data, error } = await res.json();
+      if (error) throw new Error(error);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate wallet cache after successful withdrawal
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.agentWallet.info(variables.agentId) 
+      });
+    },
+  });
 
-      if (apiError) {
-        setError(apiError);
-        return false;
-      }
-
-      setTxHash(data.hash);
+  const withdraw = async (agentId: number, ownerAddress: string, amount?: string, toAddress?: string) => {
+    try {
+      await mutation.mutateAsync({ agentId, ownerAddress, amount, toAddress });
       return true;
-    } catch (err: any) {
-      setError(err.message || "Failed to withdraw");
+    } catch {
       return false;
-    } finally {
-      setIsWithdrawing(false);
     }
-  }, []);
+  };
 
   return {
     withdraw,
-    isWithdrawing,
-    error,
-    txHash,
+    isWithdrawing: mutation.isPending,
+    error: mutation.error?.message || null,
+    txHash: mutation.data?.hash || null,
   };
 }
+

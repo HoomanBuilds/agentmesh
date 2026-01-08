@@ -7,3 +7,6 @@ export { useConfirmJob, useDisputeJob, useExpireJob, useIsJobExpired } from "./u
 export { useUpdateAgent, useAgentsByOwner, useMyAgents, useEscrowStats, useJobTimeout } from "./useAgentManagement";
 export { useAgentWallet, useAgentWithdraw } from "./useAgentWallet";
 export { useAgentChat } from "./useAgentChat";
+export { useChat } from "./useChat";
+export { useAgentTransactions } from "./useAgentTransactions";
+

@@ -11,7 +11,7 @@ const AgentRegistryABI = AgentRegistryJSON.abi;
 type RegisterStatus = "idle" | "pending" | "confirming" | "success" | "error";
 
 interface UseRegisterAgentResult {
-  register: (metadataURI: string, pricePerCall: string) => void;
+  register: (pricePerCall: string, metadataURI: string, walletAddress: string) => void;
   status: RegisterStatus;
   transactionHash?: `0x${string}`;
   error: string | null;
@@ -20,6 +20,9 @@ interface UseRegisterAgentResult {
 
 /**
  * Hook to register a new agent on-chain
+ * @param pricePerCall Price in MNEE per call (e.g. "0.05")
+ * @param metadataURI URI pointing to agent metadata
+ * @param walletAddress Agent's derived wallet address for receiving payments
  */
 export function useRegisterAgent(): UseRegisterAgentResult {
   const [status, setStatus] = useState<RegisterStatus>("idle");
@@ -34,7 +37,7 @@ export function useRegisterAgent(): UseRegisterAgentResult {
   
   const { isSuccess, isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
 
-  function register(metadataURI: string, pricePerCall: string) {
+  function register(pricePerCall: string, metadataURI: string, walletAddress: string) {
     setStatus("pending");
     setError(null);
 
@@ -42,7 +45,7 @@ export function useRegisterAgent(): UseRegisterAgentResult {
       address: REGISTRY_ADDRESS,
       abi: AgentRegistryABI,
       functionName: "registerAgent",
-      args: [metadataURI, parseEther(pricePerCall)],
+      args: [parseEther(pricePerCall), metadataURI, walletAddress as `0x${string}`],
     });
   }
 
