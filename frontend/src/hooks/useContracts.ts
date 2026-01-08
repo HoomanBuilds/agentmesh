@@ -21,9 +21,9 @@ export function usePlatformStats() {
   const stats = data as [bigint, bigint, bigint] | undefined;
 
   return {
-    totalJobs: stats?.[0] ?? BigInt(0),
-    completedJobs: stats?.[1] ?? BigInt(0),
-    totalVolume: stats?.[2] ?? BigInt(0),
+    agentCount: stats?.[0] ?? BigInt(0),
+    totalVolume: stats?.[1] ?? BigInt(0),  
+    totalJobs: stats?.[2] ?? BigInt(0),   
     isLoading,
     error,
     refetch,

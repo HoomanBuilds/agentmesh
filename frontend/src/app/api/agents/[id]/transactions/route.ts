@@ -55,6 +55,11 @@ export async function GET(
       return NextResponse.json({ error: "Failed to fetch transactions" }, { status: 500 });
     }
 
+    console.log(`[DEBUG] Agent ${id}: Found ${jobs?.length || 0} jobs`);
+    if (jobs && jobs.length > 0) {
+      console.log(`[DEBUG] First job:`, jobs[0]);
+    }
+
     // Transform jobs into transaction format
     const transactions = await Promise.all(
       (jobs || []).map(async (job) => {
@@ -84,7 +89,9 @@ export async function GET(
           counterparty: isEarned 
             ? { id: job.caller_agent_id, name: otherAgentName, address: job.user_address }
             : { id: job.provider_agent_id, name: otherAgentName },
-          description: job.input?.substring(0, 100) || "Agent service",
+          description: (typeof job.input === 'object' && job.input?.message) 
+            ? job.input.message.substring(0, 100) 
+            : "Agent service",
           status: job.status,
           txHash: job.tx_hash,
           createdAt: job.created_at,

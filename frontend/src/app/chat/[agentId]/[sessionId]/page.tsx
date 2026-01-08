@@ -185,7 +185,7 @@ export default function ChatSessionPage({
         />
 
         {/* Right Panel - Chat Area */}
-        <div className="flex-1 flex flex-col relative bg-[var(--bg-primary)]">
+        <div className="flex-1 min-w-0 flex flex-col relative bg-[var(--bg-primary)]">
           {/* Hamburger for session history - LEFT side */}
           <button
             onClick={() => setIsSidebarOpen(true)}

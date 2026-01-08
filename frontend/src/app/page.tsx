@@ -4,7 +4,7 @@ import Layout from "@/components/Layout";
 import { Link } from "next-view-transitions";
 import { ArrowRight, Bot, Zap, Shield, Sparkles } from "lucide-react";
 import { formatEther } from "viem";
-import { usePlatformStats, useAgentCount } from "@/hooks";
+import { usePlatformStats } from "@/hooks";
 import { motion } from "framer-motion";
 
 // Animation variants
@@ -22,8 +22,7 @@ const staggerContainer = {
 };
 
 export default function Home() {
-  const { totalJobs, completedJobs, totalVolume } = usePlatformStats();
-  const { count: agentCount } = useAgentCount();
+  const { agentCount, totalJobs, totalVolume } = usePlatformStats();
 
   return (
     <Layout>
