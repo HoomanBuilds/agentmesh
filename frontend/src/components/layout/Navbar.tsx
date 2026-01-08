@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -49,24 +49,24 @@ function MneeBalance() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-default)] hover:border-[var(--border-hover)] transition-colors text-sm"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-primary)] hover:border-[var(--border-secondary)] transition-colors text-sm"
       >
         <span className="font-medium">{formattedBalance}</span>
         <span className="text-[var(--text-muted)]">MNEE</span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
       </button>
 
       {dropdownOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-lg shadow-lg overflow-hidden z-50">
-          <div className="p-3 border-b border-[var(--border-default)]">
+        <div className="absolute right-0 mt-2 w-52 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl shadow-lg overflow-hidden z-50">
+          <div className="p-4 border-b border-[var(--border-primary)]">
             <div className="text-xs text-[var(--text-muted)] mb-1">Your Balance</div>
-            <div className="font-semibold">{formattedBalance} MNEE</div>
+            <div className="font-semibold text-lg">{formattedBalance} MNEE</div>
           </div>
-          <div className="p-2">
+          <div className="p-3">
             <button
               onClick={() => mint("10")}
               disabled={isPending}
-              className="w-full px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--border-default)] transition-colors text-sm font-medium flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-elevated)] border border-[var(--border-primary)] transition-colors text-sm font-medium flex items-center justify-center gap-2"
             >
               {isPending ? (
                 <>
@@ -88,12 +88,12 @@ export default function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[var(--border-default)] bg-[var(--bg-primary)]/80 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[var(--border-primary)] bg-[var(--bg-primary)]/90 backdrop-blur-xl">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
               <span className="text-black font-bold text-lg">A</span>
             </div>
             <span className="font-semibold text-lg hidden sm:block">
@@ -107,10 +107,10 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   pathname === link.href
-                    ? "bg-[var(--bg-tertiary)] text-[var(--text-primary)]"
-                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
+                    ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
                 }`}
               >
                 {link.label}
@@ -149,7 +149,7 @@ export default function Navbar() {
                         return (
                           <button
                             onClick={openConnectModal}
-                            className="btn-primary text-sm"
+                            className="btn-primary text-sm px-5 py-2.5"
                           >
                             Connect
                           </button>
@@ -160,7 +160,7 @@ export default function Navbar() {
                         return (
                           <button
                             onClick={openChainModal}
-                            className="btn-secondary text-sm text-red-400 border-red-400/50"
+                            className="px-4 py-2.5 rounded-lg text-sm font-medium text-[var(--error)] border border-[var(--error)]/30 bg-[var(--error)]/10 hover:bg-[var(--error)]/20 transition-colors"
                           >
                             Wrong Network
                           </button>
@@ -170,7 +170,7 @@ export default function Navbar() {
                       return (
                         <button
                           onClick={openAccountModal}
-                          className="btn-secondary text-sm"
+                          className="btn-secondary text-sm px-4 py-2.5"
                         >
                           {account.displayName}
                         </button>
