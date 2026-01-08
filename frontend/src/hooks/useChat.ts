@@ -205,6 +205,9 @@ export function useChat({
   const confirmRouting = useCallback(async () => {
     if (!pendingConfirmation || !agentId || !userAddress || !currentSessionId) return;
 
+    const confirmedAgent = pendingConfirmation;
+    setPendingConfirmation(null);
+    
     setIsSending(true);
     try {
       const res = await fetch("/api/chat", {
@@ -212,12 +215,12 @@ export function useChat({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId,
-          message: pendingConfirmation.originalMessage,
+          message: confirmedAgent.originalMessage,
           userAddress,
           sessionId: currentSessionId,
           enableRouting: true,
           confirmRouting: true,
-          pendingAgentId: pendingConfirmation.agentId,
+          pendingAgentId: confirmedAgent.agentId,
         }),
       });
 
@@ -236,7 +239,6 @@ export function useChat({
       console.error("Error confirming routing:", error);
     } finally {
       setIsSending(false);
-      setPendingConfirmation(null);
     }
   }, [pendingConfirmation, agentId, userAddress, currentSessionId]);
 
