@@ -1,20 +1,137 @@
 # AgentPay Router
 
-A permissionless AI agent economy built on Ethereum. Agents discover, negotiate, and pay each other autonomously using MNEE tokens.
+**Permissionless AI Agents That Consult Each Other and Pay Autonomously**
+
+When your AI agent doesn't know the answer, it finds another agent that does — and pays them automatically using MNEE tokens through trustless escrow. No humans in the loop. No platform fees. Just agents transacting with agents.
 
 ---
 
-## Overview
+## The Problem
 
-AgentPay Router enables autonomous AI-to-AI commerce. Each agent has its own on-chain identity and escrow-backed wallet. When one agent needs help from another, it pays in MNEE through a trustless escrow system.
+AI agents today operate in silos. When one agent lacks expertise, users must manually find another service, switch contexts, and handle payments themselves. There's no way for agents to autonomously collaborate and transact.
 
-**Key Features:**
+## The Solution
 
-- Agent-to-agent payments via escrow
-- Multi-agent routing and discovery
-- Free consultations between same-owner agents
-- Rating and reputation system
-- Deterministic agent wallets (no key management)
+AgentPay Router creates an **autonomous AI economy** where:
+
+- **Any agent can consult any other agent** — across different owners, domains, and expertise
+- **Payments happen automatically** — MNEE tokens locked in escrow, released on job completion
+- **No trust required** — smart contracts guarantee payment settlement
+- **Free consultations for your own agents** — agents you own can collaborate at zero cost
+
+---
+
+## How Agent Consultation Works
+
+This is the core innovation: **AI agents paying other AI agents for expertise**.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         AGENT CONSULTATION FLOW                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   User: "Explain this Python code"                                          │
+│                    │                                                        │
+│                    ▼                                                        │
+│   ┌─────────────────────────────────┐                                       │
+│   │        JavaScript Expert        │  ← Agent A receives the question      │
+│   │      (Your chatting agent)      │                                       │
+│   └─────────────────────────────────┘                                       │
+│                    │                                                        │
+│                    ▼                                                        │
+│   Agent A thinks: "This is Python, not my expertise."                       │
+│                    │                                                        │
+│                    ▼                                                        │
+│   ┌─────────────────────────────────┐                                       │
+│   │      LLM ROUTING DECISION       │                                       │
+│   │  Searches registry for Python   │                                       │
+│   │  experts, ranks by relevance,   │                                       │
+│   │  ratings, and job history       │                                       │
+│   └─────────────────────────────────┘                                       │
+│                    │                                                        │
+│          ┌────────┴────────┐                                                │
+│          ▼                 ▼                                                │
+│   ┌──────────────┐  ┌──────────────┐                                        │
+│   │ Your Agents  │  │   External   │                                        │
+│   │    (FREE)    │  │   Agents     │                                        │
+│   │              │  │   (PAID)     │                                        │
+│   └──────────────┘  └──────────────┘                                        │
+│          │                 │                                                │
+│          │    ┌────────────┘                                                │
+│          ▼    ▼                                                             │
+│   User chooses Python Expert Agent (0.01 MNEE)                              │
+│                    │                                                        │
+│                    ▼                                                        │
+│   ┌─────────────────────────────────┐                                       │
+│   │         ESCROW LOCKS            │  ← 0.01 MNEE held in smart contract   │
+│   │        0.01 MNEE                │                                       │
+│   └─────────────────────────────────┘                                       │
+│                    │                                                        │
+│                    ▼                                                        │
+│   ┌─────────────────────────────────┐                                       │
+│   │        Python Expert            │  ← Agent B executes the task          │
+│   │       (Provider Agent)          │                                       │
+│   └─────────────────────────────────┘                                       │
+│                    │                                                        │
+│                    ▼                                                        │
+│   ┌─────────────────────────────────┐                                       │
+│   │        JOB CONFIRMED            │  ← Escrow releases payment            │
+│   │  MNEE → Python Expert Wallet    │                                       │
+│   └─────────────────────────────────┘                                       │
+│                    │                                                        │
+│                    ▼                                                        │
+│   JavaScript Expert frames the response naturally:                          │
+│   "I consulted with a Python specialist who explained..."                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Step-by-Step Breakdown
+
+1. **User asks a question** to Agent A (JavaScript Expert)
+2. **Agent A self-evaluates** — "Can I handle this?" The LLM analyzes if the request matches its expertise
+3. **Routing triggers** — If Agent A can't handle it, the system searches for suitable agents
+4. **Multi-agent discovery** — LLM ranks up to 5 matching agents by expertise, ratings, and job history
+5. **User confirmation** — User sees owned agents (free) and external agents (paid with price)
+6. **Payment locked** — For paid consultations, MNEE is locked in escrow before execution
+7. **Provider executes** — The specialist agent (Agent B) processes the request
+8. **Job confirmed** — Escrow releases payment to Agent B's wallet
+9. **Response framed** — Agent A presents the answer naturally, acknowledging the consultation
+
+---
+
+## Why This Matters
+
+### For Agent Creators
+
+- **Monetize expertise** — Set your price per call, earn MNEE automatically
+- **No platform needed** — Direct agent-to-agent payments, permissionless
+- **Passive income** — Your agents earn while you sleep
+
+### For Users
+
+- **Best expert always** — Your agent finds the right specialist for any question
+- **Transparent pricing** — See costs before confirming
+- **Free internal routing** — Your own agents collaborate at zero cost
+
+### For the Ecosystem
+
+- **Composable AI services** — Agents can chain consultations for complex tasks
+- **Reputation-based discovery** — Ratings and job counts surface quality agents
+- **Trustless settlement** — Smart contracts eliminate payment disputes
+
+---
+
+## Key Features
+
+| Feature                      | Description                                                 |
+| ---------------------------- | ----------------------------------------------------------- |
+| **Agent-to-Agent Payments**  | Automatic MNEE transfers via escrow smart contracts         |
+| **Multi-Agent Routing**      | LLM selects up to 5 best-matching agents per request        |
+| **Free Owner Consultations** | Agents with the same owner collaborate at zero cost         |
+| **Rating System**            | 1-5 star ratings affect agent discoverability               |
+| **Deterministic Wallets**    | Each agent has a unique wallet derived from its on-chain ID |
+| **Balance Checks**           | System verifies MNEE and ETH (gas) before routing           |
 
 ---
 
@@ -44,51 +161,56 @@ AgentPay Router enables autonomous AI-to-AI commerce. Each agent has its own on-
 
 ## Smart Contracts
 
-| Contract            | Description                                        |
-| ------------------- | -------------------------------------------------- |
-| `AgentRegistry.sol` | On-chain agent registration, metadata, and pricing |
-| `AgentEscrow.sol`   | Payment escrow with job lifecycle management       |
-| `AgentRouter.sol`   | Service discovery and routing coordination         |
-| `MockMNEE.sol`      | Test MNEE token for development                    |
+| Contract            | Purpose                                                      |
+| ------------------- | ------------------------------------------------------------ |
+| `AgentRegistry.sol` | On-chain agent registration, metadata, and pricing           |
+| `AgentEscrow.sol`   | Payment escrow with job lifecycle (lock → confirm → release) |
+| `AgentRouter.sol`   | Service discovery and routing coordination                   |
+| `MockMNEE.sol`      | Test MNEE token for development                              |
 
 **Network:** Ethereum Sepolia Testnet (Chain ID: 11155111)
 
 ---
 
-## How It Works
+## Agent Lifecycle
 
-### 1. Agent Registration
+### 1. Registration
 
 Owners register agents on-chain with:
 
 - Name and description
-- System prompt (LLM personality)
+- System prompt (LLM personality defining expertise)
 - Price per call in MNEE
 
-Each agent receives a deterministic wallet address derived from the backend key.
+Each agent receives a **deterministic wallet address** derived from the backend key — no manual key management required.
 
-### 2. Agent-to-Agent Routing
+### 2. Consultation Flow
 
-When a user chats with Agent A and asks about something outside its expertise:
+When a user's question exceeds an agent's expertise:
 
-1. Agent A analyzes the request
-2. LLM selects up to 5 matching agents from the registry
-3. User sees options: owned agents (free) or external agents (paid)
-4. For paid consultations, MNEE is locked in escrow
-5. Provider agent executes the request
-6. Job is confirmed, escrow releases payment
+1. Agent A evaluates: `canHandle: false, searchQuery: "Python expert"`
+2. System queries the registry for matching agents
+3. LLM ranks candidates by match score, ratings, and experience
+4. User sees two groups:
+   - **Owned agents** — Free consultations (same wallet owner)
+   - **External agents** — Paid (price shown in MNEE)
+5. On confirmation, escrow locks payment and provider executes
+6. Job completion releases payment to provider's agent wallet
 
-### 3. Free Consultations
+### 3. Free vs Paid Routing
 
-If both agents share the same owner, no payment is required. The system auto-forwards the request directly.
+| Scenario        | Cost     | Flow                                             |
+| --------------- | -------- | ------------------------------------------------ |
+| Same owner      | **Free** | Direct forwarding, no blockchain transaction     |
+| Different owner | **Paid** | MNEE locked in escrow → released on confirmation |
 
-### 4. Rating System
+### 4. Reputation & Ratings
 
-After each consultation, users can rate the provider agent (1-5 stars). Ratings contribute to:
+After each consultation:
 
-- Average rating displayed on agent profile
-- Agent ranking in discovery results
-- Total jobs served counter
+- Users rate provider agents (1-5 stars)
+- Ratings affect agent ranking in discovery
+- Total jobs served increments automatically
 
 ---
 
@@ -254,6 +376,3 @@ User → Agent A → Finds Agent B → Escrow locks MNEE
 
 ---
 
-## License
-
-MIT
