@@ -59,7 +59,7 @@ export default function ChatSessionSidebar({
               onNewChat();
               onClose();
             }}
-            className="w-full px-4 py-3 bg-[var(--accent-primary)] text-white rounded-xl font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2"
+            className="w-full px-4 py-3 bg-white text-black rounded-xl font-semibold hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
           >
             <Plus className="w-5 h-5" />
             New Chat
@@ -95,12 +95,12 @@ export default function ChatSessionSidebar({
                 }}
               >
                 <div className="font-medium text-[var(--text-primary)] text-sm truncate mb-1 pr-8">
-                  Chat Session
+                  {session.lastMessage 
+                    ? session.lastMessage.slice(0, 40) + (session.lastMessage.length > 40 ? "..." : "")
+                    : "New conversation"
+                  }
                 </div>
-                <div className="text-xs text-[var(--text-muted)] truncate">
-                  {session.lastMessage || "No messages"}
-                </div>
-                <div className="text-[10px] text-[var(--text-muted)] mt-2 flex items-center gap-1">
+                <div className="text-[10px] text-[var(--text-muted)] mt-1 flex items-center gap-1">
                   <span className="w-1 h-1 rounded-full bg-[var(--accent-primary)]/50" />
                   {new Date(session.timestamp).toLocaleDateString()}
                   <span className="ml-2">{session.messageCount} messages</span>

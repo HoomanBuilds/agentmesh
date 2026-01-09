@@ -111,6 +111,8 @@ export default function ChatSessionPage({
     pendingConfirmation,
     confirmRouting,
     cancelRouting,
+    selectAgent,
+    autoForward,
   } = useChat({
     agentId: agent?.id || null,
     agentOnchainId: agent?.onchain_id || null,
@@ -208,7 +210,10 @@ export default function ChatSessionPage({
               isThinking={isSending}
               onConfirmRouting={confirmRouting}
               onCancelRouting={cancelRouting}
+              onSelectAgent={selectAgent}
+              onAutoForward={autoForward}
               pendingConfirmation={!!pendingConfirmation}
+              userAddress={address}
             />
           )}
 

@@ -1,9 +1,11 @@
 "use client";
 
-import { Message } from "@/hooks/useChat";
-import { Bot, CheckCircle, ArrowRight } from "lucide-react";
+import { Message, PendingAgent } from "@/hooks/useChat";
+import { Bot, CheckCircle, ArrowRight, Star, Briefcase, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useState } from "react";
+import RatingStars from "./RatingStars";
 
 interface ChatMessagesProps {
   messages: Message[];
@@ -12,7 +14,10 @@ interface ChatMessagesProps {
   isThinking?: boolean;
   onConfirmRouting?: () => void;
   onCancelRouting?: () => void;
+  onSelectAgent?: (agentId: string) => void;
+  onAutoForward?: (agentId: string) => void;
   pendingConfirmation?: boolean;
+  userAddress?: string;
 }
 
 export default function ChatMessages({
@@ -22,8 +27,13 @@ export default function ChatMessages({
   isThinking = false,
   onConfirmRouting,
   onCancelRouting,
+  onSelectAgent,
+  onAutoForward,
   pendingConfirmation = false,
+  userAddress,
 }: ChatMessagesProps) {
+  const [sortBy, setSortBy] = useState<"jobs" | "rating">("jobs");
+  const [ratedJobs, setRatedJobs] = useState<Set<string>>(new Set());
   if (messages.length === 0 && !isThinking) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -190,6 +200,9 @@ export default function ChatMessages({
                           ({message.routing.price} MNEE)
                         </span>
                       )}
+                      {message.routing.isFreeConsultation && (
+                        <span className="text-yellow-400 text-xs">(Free)</span>
+                      )}
                     </div>
                     {message.routing.txHash && (
                       <div className="flex items-center gap-2 mt-1 text-green-400">
@@ -199,47 +212,163 @@ export default function ChatMessages({
                         </span>
                       </div>
                     )}
+                    
+                    {/* Rating stars for routed responses */}
+                    {message.routing.targetAgentId && userAddress && !ratedJobs.has(message.routing.targetAgentId + message.timestamp) && (
+                      <RatingStars
+                        agentId={message.routing.targetAgentId}
+                        jobId={message.routing.targetAgentId + "-" + message.timestamp}
+                        userAddress={userAddress}
+                        agentName={message.routing.delegatedTo || "Agent"}
+                        onRated={() => setRatedJobs(prev => new Set([...prev, message.routing!.targetAgentId! + message.timestamp]))}
+                      />
+                    )}
                   </div>
                 )}
 
-                {/* Routing confirmation card */}
-                {message.routing?.needsConfirmation && message.routing?.pendingAgent && pendingConfirmation && (
+                {/* Multi-agent selection card */}
+                {message.routing?.needsConfirmation && pendingConfirmation && (
                   <div className="mt-4 p-4 bg-[var(--bg-primary)] rounded-xl border border-[var(--border-secondary)]">
-                    {/* Agent Name as Header */}
-                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-[var(--border-primary)]">
-                      <div className="w-8 h-8 rounded-full bg-[var(--accent-primary)]/20 flex items-center justify-center">
-                        <ArrowRight className="w-4 h-4 text-[var(--accent-primary)]" />
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-primary)]">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-[var(--accent-primary)]" />
+                        <span className="font-semibold text-[var(--text-primary)]">
+                          {(message.routing.ownedAgents?.length || 0) + (message.routing.externalAgents?.length || 0)} Specialist{((message.routing.ownedAgents?.length || 0) + (message.routing.externalAgents?.length || 0)) > 1 ? 's' : ''} Found
+                        </span>
                       </div>
-                      <span className="font-semibold text-lg text-[var(--text-primary)]">{message.routing.pendingAgent.name}</span>
-                    </div>
-                    
-                    <div className="space-y-3 mb-4">
-                      {message.routing.pendingAgent.description && (
-                        <div>
-                          <div className="text-xs text-[var(--text-muted)] mb-1">Description</div>
-                          <div className="text-sm text-[var(--text-secondary)]">{message.routing.pendingAgent.description}</div>
-                        </div>
-                      )}
-                      <div className="pt-3 border-t border-[var(--border-primary)]">
-                        <div className="text-xs text-[var(--text-muted)] mb-1">Price</div>
-                        <div className="text-lg font-semibold text-[var(--accent-primary)]">{message.routing.pendingAgent.price} MNEE</div>
-                      </div>
+                      {/* Sort dropdown */}
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as "jobs" | "rating")}
+                        className="text-xs bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded px-2 py-1 text-[var(--text-secondary)]"
+                      >
+                        <option value="jobs">Sort by Jobs</option>
+                        <option value="rating">Sort by Rating</option>
+                      </select>
                     </div>
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={onConfirmRouting}
-                        className="flex-1 btn-primary text-sm px-4 py-2.5"
-                      >
-                        ✓ Pay & Consult
-                      </button>
-                      <button
-                        onClick={onCancelRouting}
-                        className="flex-1 px-4 py-2.5 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg text-sm font-medium hover:bg-[var(--bg-tertiary)] transition-colors border border-[var(--border-primary)]"
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                    {/* Owned Agents (Free) */}
+                    {message.routing.ownedAgents && message.routing.ownedAgents.length > 0 && (
+                      <div className="mb-4">
+                        <div className="text-xs text-yellow-400 mb-2 flex items-center gap-1">
+                          <span>✨</span> Your Agents (Free Consultation)
+                        </div>
+                        <div className="space-y-2">
+                          {[...message.routing.ownedAgents]
+                            .sort((a, b) => sortBy === "jobs" 
+                              ? (b.totalJobs || 0) - (a.totalJobs || 0)
+                              : (b.averageRating || 0) - (a.averageRating || 0)
+                            )
+                            .map((agent) => (
+                              <div key={agent.id} className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-yellow-500/30">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-[var(--text-primary)] truncate">{agent.name}</div>
+                                    {agent.description && (
+                                      <div className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">{agent.description}</div>
+                                    )}
+                                    <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-secondary)]">
+                                      <span className="flex items-center gap-1">
+                                        <Briefcase className="w-3 h-3" /> {agent.totalJobs || 0} jobs
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <Star className="w-3 h-3 text-yellow-400" /> {(agent.averageRating || 0).toFixed(1)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-1.5">
+                                    <button
+                                      onClick={() => onAutoForward?.(agent.id)}
+                                      className="text-xs px-3 py-1.5 bg-yellow-500/20 text-yellow-400 rounded font-medium hover:bg-yellow-500/30 transition-colors whitespace-nowrap"
+                                    >
+                                      Auto-forward
+                                    </button>
+                                    <a
+                                      href={`/agents/${agent.id}`}
+                                      className="text-xs px-3 py-1.5 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded font-medium hover:bg-[var(--bg-primary)] transition-colors text-center whitespace-nowrap"
+                                    >
+                                      Chat directly
+                                    </a>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* External Agents (Paid) */}
+                    {message.routing.externalAgents && message.routing.externalAgents.length > 0 && (
+                      <div>
+                        {message.routing.ownedAgents && message.routing.ownedAgents.length > 0 && (
+                          <div className="text-xs text-[var(--text-muted)] mb-2">Other Experts</div>
+                        )}
+                        <div className="space-y-2">
+                          {[...message.routing.externalAgents]
+                            .sort((a, b) => sortBy === "jobs" 
+                              ? (b.totalJobs || 0) - (a.totalJobs || 0)
+                              : (b.averageRating || 0) - (a.averageRating || 0)
+                            )
+                            .map((agent) => (
+                              <div key={agent.id} className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-primary)]">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-[var(--text-primary)] truncate">{agent.name}</div>
+                                    {agent.description && (
+                                      <div className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">{agent.description}</div>
+                                    )}
+                                    <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-secondary)]">
+                                      <span className="flex items-center gap-1">
+                                        <Briefcase className="w-3 h-3" /> {agent.totalJobs || 0} jobs
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <Star className="w-3 h-3 text-yellow-400" /> {(agent.averageRating || 0).toFixed(1)}
+                                      </span>
+                                      <span className="text-[var(--accent-primary)] font-medium">{agent.price} MNEE</span>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => onSelectAgent?.(agent.id)}
+                                    className="text-xs px-3 py-1.5 btn-primary whitespace-nowrap"
+                                  >
+                                    Pay & Consult
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Legacy single-agent fallback */}
+                    {!message.routing.multipleAgents && message.routing.pendingAgent && (
+                      <div className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-primary)]">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="font-medium text-[var(--text-primary)]">{message.routing.pendingAgent.name}</div>
+                            {message.routing.pendingAgent.description && (
+                              <div className="text-xs text-[var(--text-muted)] mt-1">{message.routing.pendingAgent.description}</div>
+                            )}
+                            <div className="text-[var(--accent-primary)] font-medium text-sm mt-2">{message.routing.pendingAgent.price} MNEE</div>
+                          </div>
+                          <button
+                            onClick={onConfirmRouting}
+                            className="text-xs px-3 py-1.5 btn-primary whitespace-nowrap"
+                          >
+                            Pay & Consult
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cancel button */}
+                    <button
+                      onClick={onCancelRouting}
+                      className="w-full mt-3 px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-lg text-sm font-medium hover:bg-[var(--bg-tertiary)] transition-colors border border-[var(--border-primary)]"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 )}
               </div>

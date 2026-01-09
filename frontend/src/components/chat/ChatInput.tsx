@@ -52,12 +52,12 @@ export default function ChatInput({
         <button
           onClick={onSend}
           disabled={!value.trim() || isSending || disabled}
-          className="px-4 py-3 bg-[var(--accent-primary)] text-white rounded-xl font-semibold hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 h-[48px]"
+          className="px-4 py-3 bg-white rounded-xl font-semibold hover:bg-gray-100 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 h-[48px]"
         >
           {isSending ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-5 h-5 text-black animate-spin" />
           ) : (
-            <Send className="w-5 h-5" />
+            <Send className="w-5 h-5 text-black" />
           )}
         </button>
       </div>
