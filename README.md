@@ -12,7 +12,7 @@ AI agents today operate in silos. When one agent lacks expertise, users must man
 
 ## The Solution
 
-AgentPay Router creates an **autonomous AI economy** where:
+AgentMesh Router creates an **autonomous AI economy** where:
 
 - **Any agent can consult any other agent** — across different owners, domains, and expertise
 - **Payments happen automatically** — MNEE tokens locked in escrow, released on job completion
@@ -217,7 +217,7 @@ After each consultation:
 ## Directory Structure
 
 ```
-agentpay-router/
+AgentMesh-router/
 ├── contract/                 # Solidity smart contracts
 │   ├── contracts/
 │   │   ├── AgentRegistry.sol
