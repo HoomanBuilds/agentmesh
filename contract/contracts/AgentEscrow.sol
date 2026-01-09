@@ -21,6 +21,11 @@ contract AgentEscrow is IAgentEscrow, Ownable, ReentrancyGuard {
     uint256 public jobTimeout;
     address public router;
     
+    // Platform fee settings
+    address public platformTreasury;
+    uint256 public platformFeeBps; // Fee in basis points (1000 = 10%)
+    uint256 public totalPlatformFees; 
+    
     // Job statistics
     uint256 public totalJobsCreated;
     uint256 public totalJobsCompleted;
@@ -38,6 +43,8 @@ contract AgentEscrow is IAgentEscrow, Ownable, ReentrancyGuard {
     error JobNotPending();
     error JobNotExpired();
     error OnlyRouter();
+    error InvalidTreasury();
+    error FeeTooHigh();
 
     // ============ Modifiers ============
 
@@ -55,10 +62,14 @@ contract AgentEscrow is IAgentEscrow, Ownable, ReentrancyGuard {
      */
     constructor(
         address _mneeToken,
-        uint256 _jobTimeout
+        uint256 _jobTimeout,
+        address _platformTreasury,
+        uint256 _platformFeeBps
     ) Ownable(msg.sender) {
         mneeToken = IERC20(_mneeToken);
         jobTimeout = _jobTimeout;
+        platformTreasury = _platformTreasury;
+        platformFeeBps = _platformFeeBps;
     }
 
     // ============ Admin Functions ============
@@ -77,6 +88,24 @@ contract AgentEscrow is IAgentEscrow, Ownable, ReentrancyGuard {
      */
     function setJobTimeout(uint256 _newTimeout) external onlyOwner {
         jobTimeout = _newTimeout;
+    }
+
+    /**
+     * @notice Update platform treasury address (only owner)
+     * @param _treasury New treasury address
+     */
+    function setPlatformTreasury(address _treasury) external onlyOwner {
+        if (_treasury == address(0)) revert InvalidTreasury();
+        platformTreasury = _treasury;
+    }
+
+    /**
+     * @notice Update platform fee in basis points (only owner)
+     * @param _feeBps New fee in basis points (max 2000 = 20%)
+     */
+    function setPlatformFeeBps(uint256 _feeBps) external onlyOwner {
+        if (_feeBps > 2000) revert FeeTooHigh();
+        platformFeeBps = _feeBps;
     }
 
     // ============ Job Management (Called by Router) ============
@@ -142,10 +171,23 @@ contract AgentEscrow is IAgentEscrow, Ownable, ReentrancyGuard {
 
         job.status = JobStatus.Completed;
 
-        // Release MNEE to provider
-        mneeToken.safeTransfer(providerOwner, job.amount);
+        // Calculate platform fee
+        uint256 platformFee = (job.amount * platformFeeBps) / 10000;
+        uint256 providerAmount = job.amount - platformFee;
 
-        emit JobCompleted(jobId, job.amount);
+        // Transfer platform fee to treasury
+        if (platformFee > 0 && platformTreasury != address(0)) {
+            mneeToken.safeTransfer(platformTreasury, platformFee);
+            totalPlatformFees += platformFee;
+            emit PlatformFeeCollected(jobId, platformFee);
+        } else {
+            providerAmount = job.amount;
+        }
+
+        // Release remaining MNEE to provider
+        mneeToken.safeTransfer(providerOwner, providerAmount);
+
+        emit JobCompleted(jobId, providerAmount);
         
         // Update stats
         totalJobsCompleted++;
@@ -191,10 +233,23 @@ contract AgentEscrow is IAgentEscrow, Ownable, ReentrancyGuard {
 
         job.status = JobStatus.Expired;
 
-        // Release MNEE to provider
-        mneeToken.safeTransfer(providerOwner, job.amount);
+        // Calculate platform fee
+        uint256 platformFee = (job.amount * platformFeeBps) / 10000;
+        uint256 providerAmount = job.amount - platformFee;
 
-        emit JobExpired(jobId, job.amount);
+        // Transfer platform fee to treasury
+        if (platformFee > 0 && platformTreasury != address(0)) {
+            mneeToken.safeTransfer(platformTreasury, platformFee);
+            totalPlatformFees += platformFee;
+            emit PlatformFeeCollected(jobId, platformFee);
+        } else {
+            providerAmount = job.amount;
+        }
+
+        // Release remaining MNEE to provider
+        mneeToken.safeTransfer(providerOwner, providerAmount);
+
+        emit JobExpired(jobId, providerAmount);
         
         // Update stats
         totalJobsExpired++;
@@ -209,8 +264,7 @@ contract AgentEscrow is IAgentEscrow, Ownable, ReentrancyGuard {
 
     function isJobExpired(bytes32 jobId) external view returns (bool) {
         Job storage job = _jobs[jobId];
-        return job.status == JobStatus.Pending &&
-               block.timestamp >= job.createdAt + jobTimeout;
+        return job.status == JobStatus.Pending && block.timestamp >= job.createdAt + jobTimeout;
     }
 
     /**
@@ -246,5 +300,19 @@ contract AgentEscrow is IAgentEscrow, Ownable, ReentrancyGuard {
             pendingJobsCount,
             mneeToken.balanceOf(address(this))
         );
+    }
+
+    /**
+     * @notice Get platform fee statistics
+     * @return _treasury Platform treasury address
+     * @return _feeBps Current fee in basis points
+     * @return _totalCollected Total fees collected ever
+     */
+    function getPlatformStats() external view returns (
+        address _treasury,
+        uint256 _feeBps,
+        uint256 _totalCollected
+    ) {
+        return (platformTreasury, platformFeeBps, totalPlatformFees);
     }
 }
