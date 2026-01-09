@@ -102,6 +102,30 @@ export async function sendMneeFromAgent(
 }
 
 /**
+ * Send ETH from agent wallet to another address
+ */
+export async function sendEthFromAgent(
+  agentId: number,
+  to: string,
+  amount: string
+): Promise<{ hash: string } | { error: string }> {
+  try {
+    const wallet = getAgentWallet(agentId);
+    
+    const tx = await wallet.sendTransaction({
+      to,
+      value: ethers.parseEther(amount),
+    });
+    await tx.wait();
+    
+    return { hash: tx.hash };
+  } catch (error: any) {
+    console.error("Error sending ETH from agent:", error);
+    return { error: error.message };
+  }
+}
+
+/**
  * Request service from another agent using escrow
  * This is the agent-to-agent payment flow:
  * 1. Approve MNEE to Router

@@ -61,17 +61,19 @@ export function useAgentWithdraw() {
       agentId, 
       ownerAddress,
       amount, 
-      toAddress 
+      toAddress,
+      token = "mnee"
     }: { 
       agentId: number; 
       ownerAddress: string;
       amount?: string; 
-      toAddress?: string 
+      toAddress?: string;
+      token?: "mnee" | "eth";
     }) => {
       const res = await fetch("/api/agent-wallet/withdraw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId, ownerAddress, amount, toAddress }),
+        body: JSON.stringify({ agentId, ownerAddress, amount, toAddress, token }),
       });
 
       const { data, error } = await res.json();
@@ -86,9 +88,18 @@ export function useAgentWithdraw() {
     },
   });
 
-  const withdraw = async (agentId: number, ownerAddress: string, amount?: string, toAddress?: string) => {
+  const withdrawMnee = async (agentId: number, ownerAddress: string, amount?: string, toAddress?: string) => {
     try {
-      await mutation.mutateAsync({ agentId, ownerAddress, amount, toAddress });
+      await mutation.mutateAsync({ agentId, ownerAddress, amount, toAddress, token: "mnee" });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const withdrawEth = async (agentId: number, ownerAddress: string, amount?: string, toAddress?: string) => {
+    try {
+      await mutation.mutateAsync({ agentId, ownerAddress, amount, toAddress, token: "eth" });
       return true;
     } catch {
       return false;
@@ -96,10 +107,12 @@ export function useAgentWithdraw() {
   };
 
   return {
-    withdraw,
+    withdrawMnee,
+    withdrawEth,
     isWithdrawing: mutation.isPending,
     error: mutation.error?.message || null,
     txHash: mutation.data?.hash || null,
   };
 }
+
 

@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendMneeFromAgent, getAgentMneeBalance } from "@/lib/agent-wallet";
+import { sendMneeFromAgent, sendEthFromAgent, getAgentMneeBalance, getAgentEthBalance } from "@/lib/agent-wallet";
 import { supabase } from "@/lib/supabase";
 
 /**
  * POST /api/agent-wallet/withdraw
- * Withdraw MNEE from agent wallet to owner's wallet
+ * Withdraw MNEE or ETH from agent wallet to owner's wallet
  * 
- * Body: { agentId: number, ownerAddress: string, amount?: string }
+ * Body: { agentId: number, ownerAddress: string, amount?: string, token?: "mnee" | "eth" }
  * ownerAddress is REQUIRED for ownership verification
  * If amount is not provided, withdraws entire balance
+ * token defaults to "mnee" if not specified
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { agentId, amount, toAddress, ownerAddress } = body;
+    const { agentId, amount, toAddress, ownerAddress, token = "mnee" } = body;
 
     if (agentId === undefined || agentId === null) {
       return NextResponse.json(
@@ -61,11 +62,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current balance
+    // Get current balance based on token type
     let withdrawAmount = amount;
     if (!withdrawAmount) {
-      const balance = await getAgentMneeBalance(agentId);
-      withdrawAmount = balance;
+      if (token === "eth") {
+        const balance = await getAgentEthBalance(agentId);
+        // Leave a small amount for gas if withdrawing all ETH
+        const leaveForGas = 0.0001;
+        withdrawAmount = (parseFloat(balance) - leaveForGas).toFixed(8);
+      } else {
+        withdrawAmount = await getAgentMneeBalance(agentId);
+      }
     }
 
     if (parseFloat(withdrawAmount) <= 0) {
@@ -75,8 +82,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send MNEE to recipient
-    const result = await sendMneeFromAgent(agentId, recipient, withdrawAmount);
+    // Send tokens to recipient
+    let result;
+    if (token === "eth") {
+      result = await sendEthFromAgent(agentId, recipient, withdrawAmount);
+    } else {
+      result = await sendMneeFromAgent(agentId, recipient, withdrawAmount);
+    }
 
     if ("error" in result) {
       return NextResponse.json(
@@ -89,6 +101,7 @@ export async function POST(request: NextRequest) {
       data: {
         hash: result.hash,
         amount: withdrawAmount,
+        token,
         recipient,
       },
     });
@@ -100,3 +113,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
