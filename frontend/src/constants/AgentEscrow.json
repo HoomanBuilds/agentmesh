@@ -1,5 +1,5 @@
 {
-  "address": "0xc3e5969E12D9B75E1E54A6f31ccA83FD8d56539C",
+  "address": "0x7716a003d72aBd255922A599EF18d74270E37858",
   "abi": [
     {
       "inputs": [
@@ -12,10 +12,30 @@
           "internalType": "uint256",
           "name": "_jobTimeout",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_platformTreasury",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_platformFeeBps",
+          "type": "uint256"
         }
       ],
       "stateMutability": "nonpayable",
       "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "FeeTooHigh",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidTreasury",
+      "type": "error"
     },
     {
       "inputs": [],
@@ -186,6 +206,25 @@
         }
       ],
       "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "jobId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fee",
+          "type": "uint256"
+        }
+      ],
+      "name": "PlatformFeeCollected",
       "type": "event"
     },
     {
@@ -374,6 +413,29 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "getPlatformStats",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "_treasury",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_feeBps",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_totalCollected",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "bytes32",
@@ -446,6 +508,32 @@
     },
     {
       "inputs": [],
+      "name": "platformFeeBps",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "platformTreasury",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "renounceOwnership",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -473,6 +561,32 @@
         }
       ],
       "name": "setJobTimeout",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_feeBps",
+          "type": "uint256"
+        }
+      ],
+      "name": "setPlatformFeeBps",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_treasury",
+          "type": "address"
+        }
+      ],
+      "name": "setPlatformTreasury",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -532,6 +646,19 @@
     {
       "inputs": [],
       "name": "totalJobsExpired",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalPlatformFees",
       "outputs": [
         {
           "internalType": "uint256",
