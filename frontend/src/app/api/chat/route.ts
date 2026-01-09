@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
       sessionId = "default", 
       userAddress, 
       enableRouting = true,
-      // For confirmation flow
       confirmRouting = false,
       pendingAgentId = null,
+      autoForward = false,
     } = body;
 
     if (!agentId || !message || !userAddress) {
@@ -56,7 +56,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Agent not registered on-chain" }, { status: 400 });
     }
 
-    // Handle confirmation of pending agent routing
+    if (autoForward && pendingAgentId) {
+      return await handleAutoForward(agent, pendingAgentId, message, userAddress, sessionId);
+    }
+
     if (confirmRouting && pendingAgentId) {
       return await handleConfirmedRouting(agent, pendingAgentId, message, userAddress, sessionId);
     }
@@ -130,35 +133,32 @@ Respond with:
       }
     }
 
-    // Step 2: If agent can't handle, find a suitable agent and ASK for confirmation
+    // Step 2: If agent can't handle, find suitable agents and ASK for confirmation
     if (!routingDecision.canHandle && routingDecision.searchQuery && enableRouting) {
-      console.log(`Agent ${agent.name} looking for another agent for: ${routingDecision.searchQuery}`);
+      console.log(`Agent ${agent.name} looking for other agents for: ${routingDecision.searchQuery}`);
 
-      // Search for suitable agents (cached for 5 minutes)
-      const otherAgents = await getOrSet(
-        `${backendCacheKeys.activeAgents}:${agentId}`,
-        async () => {
-          const { data } = await supabase
-            .from("agents")
-            .select("*")
-            .neq("id", agentId)
-            .eq("active", true)
-            .not("onchain_id", "is", null);
-          return data || [];
-        },
-        5 * 60 * 1000
-      );
+      const { data: otherAgents } = await supabase
+        .from("agents")
+        .select("*")
+        .neq("id", agentId)
+        .eq("active", true)
+        .not("onchain_id", "is", null);
+
+      console.log("[MULTI-AGENT] Found", otherAgents?.length || 0, "other agents for routing");
 
       if (otherAgents && otherAgents.length > 0) {
         const agentDescriptions = otherAgents.map((a, i) => 
-          `${i + 1}. "${a.name}": ${a.description || a.system_prompt.substring(0, 100)}`
+          `${i + 1}. "${a.name}": ${a.description || a.system_prompt.substring(0, 100)} (Jobs: ${a.total_jobs_served || 0}, Rating: ${a.average_rating || 0})`
         ).join("\n");
 
         const { object: selection } = await generateObject({
           model: openai("gpt-4o-mini"),
           schema: z.object({
-            selectedIndex: z.number().describe("1-based index of best agent, 0 if none suitable"),
-            reason: z.string(),
+            selectedAgents: z.array(z.object({
+              index: z.number().describe("1-based index of agent"),
+              matchScore: z.number().min(0).max(100).describe("How well this agent matches the request (0-100)"),
+              reason: z.string().describe("Brief reason why this agent is suitable"),
+            })).max(5).describe("Top 1-5 matching agents, ordered by relevance"),
           }),
           prompt: `User needs help with: "${message}"
 Original agent couldn't handle because: "${routingDecision.reason}"
@@ -166,24 +166,59 @@ Original agent couldn't handle because: "${routingDecision.reason}"
 Available agents:
 ${agentDescriptions}
 
-Select the best agent (1-${otherAgents.length}) or 0 if none suitable.`,
+Select up to 5 best-matching agents (1-${otherAgents.length}), ordered by how well they can help.
+Only include agents that can actually help with this request.`,
         });
 
-        if (selection.selectedIndex > 0 && selection.selectedIndex <= otherAgents.length) {
-          const targetAgent = otherAgents[selection.selectedIndex - 1];
-          const targetPriceEth = ethers.formatEther(BigInt(targetAgent.price_per_call));
+        console.log("[MULTI-AGENT] LLM selected agents:", JSON.stringify(selection.selectedAgents, null, 2));
 
-          let hasBalance = false;
+        if (selection.selectedAgents && selection.selectedAgents.length > 0) {
+          const currentAgentOwner = agent.owner_address?.toLowerCase();
+          console.log("[MULTI-AGENT] Current agent owner:", currentAgentOwner);
+          
+          const matchedAgents = selection.selectedAgents
+            .filter(sel => sel.index > 0 && sel.index <= otherAgents.length)
+            .map(sel => {
+              const targetAgent = otherAgents[sel.index - 1];
+              const isSameOwner = targetAgent.owner_address?.toLowerCase() === currentAgentOwner;
+              
+              return {
+                id: targetAgent.id,
+                name: targetAgent.name,
+                description: targetAgent.description,
+                price: ethers.formatEther(BigInt(targetAgent.price_per_call)),
+                onchainId: targetAgent.onchain_id,
+                totalJobs: targetAgent.total_jobs_served || 0,
+                averageRating: parseFloat(targetAgent.average_rating) || 0,
+                ratingCount: targetAgent.rating_count || 0,
+                matchScore: sel.matchScore,
+                matchReason: sel.reason,
+                isSameOwner,
+              };
+            });
+
+          console.log("[MULTI-AGENT] Matched agents:", matchedAgents.map(a => ({ name: a.name, isSameOwner: a.isSameOwner, jobs: a.totalJobs, rating: a.averageRating })));
+
+          const ownedAgents = matchedAgents.filter(a => a.isSameOwner);
+          const externalAgents = matchedAgents.filter(a => !a.isSameOwner);
+          
+          console.log("[MULTI-AGENT] Owned agents:", ownedAgents.length, "External agents:", externalAgents.length);
+
+          let walletBalance = "0";
           try {
-            const balance = await getAgentMneeBalance(agent.onchain_id);
-            hasBalance = parseFloat(balance) >= parseFloat(targetPriceEth);
+            walletBalance = await getAgentMneeBalance(agent.onchain_id);
           } catch (e) {
             console.warn("Balance check failed:", e);
           }
 
-          const confirmationResponse = hasBalance 
-            ? `I found a specialist who can help with your request!`
-            : `I found a specialist who can help, but there's insufficient balance in the agent wallet to pay for this service.`;
+          let confirmationResponse = "";
+          if (ownedAgents.length > 0 && externalAgents.length > 0) {
+            confirmationResponse = `I found ${matchedAgents.length} specialists who can help! You own ${ownedAgents.length} of them (free to use).`;
+          } else if (ownedAgents.length > 0) {
+            confirmationResponse = `I found ${ownedAgents.length} of your own agents that can help with this - you can consult them for free!`;
+          } else {
+            confirmationResponse = `I found ${externalAgents.length} specialist${externalAgents.length > 1 ? 's' : ''} who can help with your request!`;
+          }
 
           try {
             await storeMessage(agent.onchain_id, userAddress, "user", message, sessionId);
@@ -198,15 +233,17 @@ Select the best agent (1-${otherAgents.length}) or 0 if none suitable.`,
             sessionId,
             routing: {
               needsConfirmation: true,
-              pendingAgent: {
-                id: targetAgent.id,
-                name: targetAgent.name,
-                description: targetAgent.description,
-                price: targetPriceEth,
-                onchainId: targetAgent.onchain_id,
-              },
-              hasBalance,
+              multipleAgents: true,
+              ownedAgents,
+              externalAgents,
+              walletBalance,
               reason: routingDecision.reason,
+              pendingAgent: externalAgents.length === 1 && ownedAgents.length === 0 
+                ? externalAgents[0] 
+                : null,
+              hasBalance: externalAgents.length > 0 
+                ? parseFloat(walletBalance) >= parseFloat(externalAgents[0].price)
+                : true,
             },
           });
         }
@@ -278,7 +315,41 @@ async function handleConfirmedRouting(
   const targetPriceEth = ethers.formatEther(targetPrice);
 
   try {
-    const { requestAgentService, confirmAgentJob } = await import("@/lib/agent-wallet");
+    const { requestAgentService, confirmAgentJob, getAgentMneeBalance, getAgentEthBalance } = await import("@/lib/agent-wallet");
+
+    const mneeBalance = await getAgentMneeBalance(callerAgent.onchain_id);
+    const ethBalance = await getAgentEthBalance(callerAgent.onchain_id);
+    
+    console.log(`[BALANCE CHECK] Agent ${callerAgent.name}: MNEE=${mneeBalance}, ETH=${ethBalance}, Required=${targetPriceEth}`);
+    
+    if (parseFloat(mneeBalance) < parseFloat(targetPriceEth)) {
+      return NextResponse.json({
+        response: `❌ Insufficient MNEE balance. You have ${parseFloat(mneeBalance).toFixed(4)} MNEE but need ${targetPriceEth} MNEE. Please fund your agent wallet.`,
+        agentId: callerAgent.id,
+        sessionId,
+        routing: { 
+          needsConfirmation: false, 
+          error: "insufficient_mnee",
+          currentBalance: mneeBalance,
+          required: targetPriceEth
+        },
+      });
+    }
+    
+    const MIN_ETH_FOR_GAS = 0.001;
+    if (parseFloat(ethBalance) < MIN_ETH_FOR_GAS) {
+      return NextResponse.json({
+        response: `❌ Insufficient ETH for gas fees. You have ${parseFloat(ethBalance).toFixed(6)} ETH but need at least ${MIN_ETH_FOR_GAS} ETH. Please send some ETH to your agent wallet.`,
+        agentId: callerAgent.id,
+        sessionId,
+        routing: { 
+          needsConfirmation: false, 
+          error: "insufficient_eth",
+          currentBalance: ethBalance,
+          required: MIN_ETH_FOR_GAS.toString()
+        },
+      });
+    }
 
     // Step 1: Request service via escrow (locks payment)
     console.log(`Routing to ${targetAgent.name}, price: ${targetPriceEth} MNEE`);
@@ -335,18 +406,21 @@ Present this information naturally, acknowledging the consultation.`,
 
     // Record job in Supabase for payment history
     try {
+      const { getAgentWalletAddress } = await import("@/lib/agent-wallet");
+      const callerWalletAddress = getAgentWalletAddress(callerAgent.onchain_id);
+      
       const jobData = {
         job_id: serviceResult.jobId,
         caller_agent_id: callerAgent.id,
         provider_agent_id: targetAgent.id,
         caller_onchain_id: callerAgent.onchain_id,
         provider_onchain_id: targetAgent.onchain_id,
-        caller_address: userAddress, 
         user_address: userAddress,
+        caller_address: callerWalletAddress, 
         amount: targetPriceEth,
         tx_hash: ("hash" in confirmResult) ? confirmResult.hash : null,
-        input: { message: originalMessage }, 
-        output: { response: targetResponse.text },
+        input: JSON.stringify({ message: originalMessage }), 
+        output: JSON.stringify({ response: targetResponse.text }),
         status: "completed",
         completed_at: new Date().toISOString(),
       };
@@ -359,6 +433,17 @@ Present this information naturally, acknowledging the consultation.`,
         console.error("[ERROR] Failed to insert job:", insertError);
       } else {
         console.log("[SUCCESS] Job recorded in database");
+        
+        const { error: updateError } = await supabase
+          .from("agents")
+          .update({ total_jobs_served: (targetAgent.total_jobs_served || 0) + 1 })
+          .eq("id", targetAgent.id);
+        
+        if (updateError) {
+          console.warn("[WARN] Failed to increment total_jobs_served:", updateError);
+        } else {
+          console.log("[SUCCESS] Incremented total_jobs_served for", targetAgent.name);
+        }
       }
     } catch (jobError) {
       console.error("[ERROR] Job insert exception:", jobError);
@@ -371,6 +456,7 @@ Present this information naturally, acknowledging the consultation.`,
       routing: {
         wasRouted: true,
         delegatedTo: targetAgent.name,
+        targetAgentId: targetAgent.id,
         jobId: serviceResult.jobId,
         txHash: serviceResult.hash,
         price: targetPriceEth,
@@ -380,6 +466,97 @@ Present this information naturally, acknowledging the consultation.`,
     console.error("Routing error:", error);
     return NextResponse.json({
       response: `❌ An error occurred while consulting the specialist: ${error.message}`,
+      agentId: callerAgent.id,
+      sessionId,
+      routing: { wasRouted: false, error: error.message },
+    });
+  }
+}
+
+/**
+ * Handle auto-forward for same-owner agents (FREE consultation, no blockchain tx)
+ */
+async function handleAutoForward(
+  callerAgent: any,
+  targetAgentId: string,
+  originalMessage: string,
+  userAddress: string,
+  sessionId: string
+) {
+  const { data: targetAgent, error } = await supabase
+    .from("agents")
+    .select("*")
+    .eq("id", targetAgentId)
+    .single();
+
+  if (error || !targetAgent) {
+    return NextResponse.json({ error: "Target agent not found" }, { status: 404 });
+  }
+
+  console.log("[AUTO-FORWARD] Checking ownership - Caller:", callerAgent.owner_address?.toLowerCase(), "Target:", targetAgent.owner_address?.toLowerCase());
+  
+  if (targetAgent.owner_address?.toLowerCase() !== callerAgent.owner_address?.toLowerCase()) {
+    console.log("[AUTO-FORWARD] REJECTED - Different owners");
+    return NextResponse.json(
+      { error: "Auto-forward only allowed for same-owner agents" },
+      { status: 403 }
+    );
+  }
+  
+  console.log("[AUTO-FORWARD] APPROVED - Same owner, proceeding with free consultation");
+
+  try {
+    console.log(`[FREE] Auto-forwarding to same-owner agent: ${targetAgent.name}`);
+
+    const targetResponse = await generateText({
+      model: openai("gpt-4o-mini"),
+      system: targetAgent.system_prompt,
+      prompt: originalMessage,
+    });
+
+    const { text: framedResponse } = await generateText({
+      model: openai("gpt-4o-mini"),
+      system: callerAgent.system_prompt,
+      prompt: `The user asked: "${originalMessage}"
+
+I consulted with my sibling agent "${targetAgent.name}" (same owner, free consultation) who provided this answer:
+"${targetResponse.text}"
+
+Present this information naturally, acknowledging the consultation.`,
+    });
+
+    // Store messages
+    try {
+      await storeMessage(callerAgent.onchain_id, userAddress, "user", originalMessage, sessionId);
+      await storeMessage(callerAgent.onchain_id, userAddress, "assistant", framedResponse, sessionId);
+    } catch (storeError) {
+      console.warn("Failed to store messages:", storeError);
+    }
+
+    try {
+      await supabase
+        .from("agents")
+        .update({ total_jobs_served: (targetAgent.total_jobs_served || 0) + 1 })
+        .eq("id", targetAgentId);
+    } catch (updateError) {
+      console.warn("Failed to update jobs count:", updateError);
+    }
+
+    return NextResponse.json({
+      response: framedResponse,
+      agentId: callerAgent.id,
+      sessionId,
+      routing: {
+        wasRouted: true,
+        delegatedTo: targetAgent.name,
+        isFreeConsultation: true,
+        targetAgentId: targetAgent.id,
+      },
+    });
+  } catch (error: any) {
+    console.error("Auto-forward error:", error);
+    return NextResponse.json({
+      response: `❌ An error occurred while consulting your agent: ${error.message}`,
       agentId: callerAgent.id,
       sessionId,
       routing: { wasRouted: false, error: error.message },

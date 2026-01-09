@@ -2,6 +2,20 @@
 
 import { useState, useCallback, useEffect } from "react";
 
+export interface PendingAgent {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  onchainId: number;
+  totalJobs?: number;
+  averageRating?: number;
+  ratingCount?: number;
+  matchScore?: number;
+  matchReason?: string;
+  isSameOwner?: boolean;
+}
+
 export interface Message {
   role: "user" | "assistant";
   content: string;
@@ -10,16 +24,17 @@ export interface Message {
     wasRouted?: boolean;
     delegatedTo?: string | null;
     needsConfirmation?: boolean;
-    pendingAgent?: {
-      id: string;
-      name: string;
-      description: string;
-      price: string;
-      onchainId: number;
-    };
+    pendingAgent?: PendingAgent;
     hasBalance?: boolean;
     txHash?: string;
     price?: string;
+    multipleAgents?: boolean;
+    ownedAgents?: PendingAgent[];
+    externalAgents?: PendingAgent[];
+    walletBalance?: string;
+    reason?: string;
+    isFreeConsultation?: boolean;
+    targetAgentId?: string;
   };
 }
 
@@ -54,6 +69,9 @@ export function useChat({
   const [pendingConfirmation, setPendingConfirmation] = useState<{
     agentId: string;
     originalMessage: string;
+    ownedAgents?: PendingAgent[];
+    externalAgents?: PendingAgent[];
+    walletBalance?: string;
   } | null>(null);
 
   // Fetch sessions when agent changes
@@ -151,10 +169,13 @@ export function useChat({
           },
         ]);
       } else if (data.routing?.needsConfirmation) {
-        // Routing needs user confirmation
+        const routing = data.routing;
         setPendingConfirmation({
-          agentId: data.routing.pendingAgent.id,
+          agentId: routing.pendingAgent?.id || routing.externalAgents?.[0]?.id || "",
           originalMessage: userMessage.content,
+          ownedAgents: routing.ownedAgents,
+          externalAgents: routing.externalAgents,
+          walletBalance: routing.walletBalance,
         });
         setMessages((prev) => [
           ...prev,
@@ -202,10 +223,11 @@ export function useChat({
     }
   }, [input, agentId, agentOnchainId, userAddress, isSending, currentSessionId]);
 
-  const confirmRouting = useCallback(async () => {
+  // Confirm routing with a specific agent (paid)
+  const selectAgent = useCallback(async (selectedAgentId: string) => {
     if (!pendingConfirmation || !agentId || !userAddress || !currentSessionId) return;
 
-    const confirmedAgent = pendingConfirmation;
+    const originalMessage = pendingConfirmation.originalMessage;
     setPendingConfirmation(null);
     
     setIsSending(true);
@@ -215,12 +237,12 @@ export function useChat({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId,
-          message: confirmedAgent.originalMessage,
+          message: originalMessage,
           userAddress,
           sessionId: currentSessionId,
           enableRouting: true,
           confirmRouting: true,
-          pendingAgentId: confirmedAgent.agentId,
+          pendingAgentId: selectedAgentId,
         }),
       });
 
@@ -241,6 +263,53 @@ export function useChat({
       setIsSending(false);
     }
   }, [pendingConfirmation, agentId, userAddress, currentSessionId]);
+
+  // Auto-forward to same-owner agent (free)
+  const autoForward = useCallback(async (selectedAgentId: string) => {
+    if (!pendingConfirmation || !agentId || !userAddress || !currentSessionId) return;
+
+    const originalMessage = pendingConfirmation.originalMessage;
+    setPendingConfirmation(null);
+    
+    setIsSending(true);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId,
+          message: originalMessage,
+          userAddress,
+          sessionId: currentSessionId,
+          enableRouting: true,
+          autoForward: true,
+          pendingAgentId: selectedAgentId,
+        }),
+      });
+
+      const data = await res.json();
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: data.response,
+          timestamp: Date.now(),
+          routing: data.routing,
+        },
+      ]);
+    } catch (error) {
+      console.error("Error auto-forwarding:", error);
+    } finally {
+      setIsSending(false);
+    }
+  }, [pendingConfirmation, agentId, userAddress, currentSessionId]);
+
+  // Legacy confirm routing (for backwards compat with single agent)
+  const confirmRouting = useCallback(async () => {
+    if (!pendingConfirmation) return;
+    await selectAgent(pendingConfirmation.agentId);
+  }, [pendingConfirmation, selectAgent]);
 
   const cancelRouting = useCallback(async () => {
     if (!agentId || !userAddress || !currentSessionId) return;
@@ -270,5 +339,7 @@ export function useChat({
     pendingConfirmation,
     confirmRouting,
     cancelRouting,
+    selectAgent,
+    autoForward,
   };
 }
