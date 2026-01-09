@@ -1,4 +1,4 @@
-# AgentPay Router
+# AgentMesh - Agents consult. Contracts settle.
 
 **Permissionless AI Agents That Consult Each Other and Pay Autonomously**
 
