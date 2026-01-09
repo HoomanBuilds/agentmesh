@@ -6,6 +6,8 @@ describe("AgentEscrow", function () {
     let deployer, user1, user2, router
     const JOB_TIMEOUT = 3600 // 1 hour
     const AMOUNT = ethers.parseEther("0.05")
+    const PLATFORM_FEE_BPS = 1000n // 10%
+    const FEE_DENOMINATOR = 10000n
 
     beforeEach(async function () {
         const signers = await ethers.getSigners()
@@ -109,13 +111,20 @@ describe("AgentEscrow", function () {
             jobId = event.args[0]
         })
 
-        it("should complete job and release MNEE to provider", async function () {
+        it("should complete job and release MNEE to provider (minus platform fee)", async function () {
             const providerBalanceBefore = await mockMNEE.balanceOf(user2.address)
+            const treasuryBalanceBefore = await mockMNEE.balanceOf(deployer.address)
 
             await agentEscrow.connect(router).completeJob(jobId, user2.address)
 
             const providerBalanceAfter = await mockMNEE.balanceOf(user2.address)
-            expect(providerBalanceAfter - providerBalanceBefore).to.equal(AMOUNT)
+            const treasuryBalanceAfter = await mockMNEE.balanceOf(deployer.address)
+
+            const expectedFee = (AMOUNT * PLATFORM_FEE_BPS) / FEE_DENOMINATOR
+            const expectedProviderAmount = AMOUNT - expectedFee
+
+            expect(providerBalanceAfter - providerBalanceBefore).to.equal(expectedProviderAmount)
+            expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(expectedFee)
         })
 
         it("should update job status to Completed", async function () {
@@ -132,10 +141,21 @@ describe("AgentEscrow", function () {
             expect(await agentEscrow.pendingJobsCount()).to.equal(0)
         })
 
-        it("should emit JobCompleted event", async function () {
+        it("should emit JobCompleted event with provider amount", async function () {
+            const expectedFee = (AMOUNT * PLATFORM_FEE_BPS) / FEE_DENOMINATOR
+            const expectedProviderAmount = AMOUNT - expectedFee
+
             await expect(agentEscrow.connect(router).completeJob(jobId, user2.address))
                 .to.emit(agentEscrow, "JobCompleted")
-                .withArgs(jobId, AMOUNT)
+                .withArgs(jobId, expectedProviderAmount)
+        })
+
+        it("should emit PlatformFeeCollected event", async function () {
+            const expectedFee = (AMOUNT * PLATFORM_FEE_BPS) / FEE_DENOMINATOR
+
+            await expect(agentEscrow.connect(router).completeJob(jobId, user2.address))
+                .to.emit(agentEscrow, "PlatformFeeCollected")
+                .withArgs(jobId, expectedFee)
         })
 
         it("should revert if job not pending", async function () {
@@ -213,17 +233,24 @@ describe("AgentEscrow", function () {
             ).to.be.revertedWithCustomError(agentEscrow, "JobNotExpired")
         })
 
-        it("should expire job after timeout", async function () {
+        it("should expire job after timeout (with platform fee)", async function () {
             // Fast forward time
             await ethers.provider.send("evm_increaseTime", [JOB_TIMEOUT + 1])
             await ethers.provider.send("evm_mine")
 
             const providerBalanceBefore = await mockMNEE.balanceOf(user2.address)
+            const treasuryBalanceBefore = await mockMNEE.balanceOf(deployer.address)
 
             await agentEscrow.connect(router).expireJob(jobId, user2.address)
 
             const providerBalanceAfter = await mockMNEE.balanceOf(user2.address)
-            expect(providerBalanceAfter - providerBalanceBefore).to.equal(AMOUNT)
+            const treasuryBalanceAfter = await mockMNEE.balanceOf(deployer.address)
+
+            const expectedFee = (AMOUNT * PLATFORM_FEE_BPS) / FEE_DENOMINATOR
+            const expectedProviderAmount = AMOUNT - expectedFee
+
+            expect(providerBalanceAfter - providerBalanceBefore).to.equal(expectedProviderAmount)
+            expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(expectedFee)
         })
 
         it("should update job status to Expired", async function () {
@@ -246,13 +273,16 @@ describe("AgentEscrow", function () {
             expect(await agentEscrow.pendingJobsCount()).to.equal(0)
         })
 
-        it("should emit JobExpired event", async function () {
+        it("should emit JobExpired event with provider amount", async function () {
             await ethers.provider.send("evm_increaseTime", [JOB_TIMEOUT + 1])
             await ethers.provider.send("evm_mine")
 
+            const expectedFee = (AMOUNT * PLATFORM_FEE_BPS) / FEE_DENOMINATOR
+            const expectedProviderAmount = AMOUNT - expectedFee
+
             await expect(agentEscrow.connect(router).expireJob(jobId, user2.address))
                 .to.emit(agentEscrow, "JobExpired")
-                .withArgs(jobId, AMOUNT)
+                .withArgs(jobId, expectedProviderAmount)
         })
     })
 
@@ -318,6 +348,44 @@ describe("AgentEscrow", function () {
             await expect(
                 agentEscrow.connect(user1).setJobTimeout(7200),
             ).to.be.revertedWithCustomError(agentEscrow, "OwnableUnauthorizedAccount")
+        })
+
+        it("should allow owner to set platform treasury", async function () {
+            await agentEscrow.setPlatformTreasury(user2.address)
+            expect(await agentEscrow.platformTreasury()).to.equal(user2.address)
+        })
+
+        it("should allow owner to set platform fee", async function () {
+            await agentEscrow.setPlatformFeeBps(500) // 5%
+            expect(await agentEscrow.platformFeeBps()).to.equal(500)
+        })
+
+        it("should revert if fee is too high (> 20%)", async function () {
+            await expect(agentEscrow.setPlatformFeeBps(2001)).to.be.revertedWithCustomError(
+                agentEscrow,
+                "FeeTooHigh",
+            )
+        })
+
+        it("should revert if treasury is zero address", async function () {
+            await expect(
+                agentEscrow.setPlatformTreasury(ethers.ZeroAddress),
+            ).to.be.revertedWithCustomError(agentEscrow, "InvalidTreasury")
+        })
+
+        it("should track total platform fees collected", async function () {
+            // Create and complete a job
+            const tx = await agentEscrow.connect(router).createJob(0, 1, user1.address, AMOUNT)
+            const receipt = await tx.wait()
+            const event = receipt.logs.find(
+                (log) => log.fragment && log.fragment.name === "JobCreated",
+            )
+            const jobId = event.args[0]
+
+            await agentEscrow.connect(router).completeJob(jobId, user2.address)
+
+            const expectedFee = (AMOUNT * PLATFORM_FEE_BPS) / FEE_DENOMINATOR
+            expect(await agentEscrow.totalPlatformFees()).to.equal(expectedFee)
         })
     })
 })

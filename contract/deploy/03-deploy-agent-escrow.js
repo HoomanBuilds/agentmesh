@@ -23,9 +23,15 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     // Job timeout: 1 hour (3600 seconds)
     const jobTimeout = 3600
 
+    // Platform fee: 10% (1000 basis points)
+    const platformFeeBps = 1000
+
+    // Platform treasury: deployer address (can be changed later)
+    const platformTreasury = deployer
+
     const agentEscrow = await deploy("AgentEscrow", {
         from: deployer,
-        args: [mneeAddress, jobTimeout],
+        args: [mneeAddress, jobTimeout, platformTreasury, platformFeeBps],
         log: true,
         waitConfirmations: network.config.blockConfirmations || 1,
     })
@@ -33,6 +39,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     log(`AgentEscrow deployed at ${agentEscrow.address}`)
     log(`  - MNEE Token: ${mneeAddress}`)
     log(`  - Job Timeout: ${jobTimeout} seconds`)
+    log(`  - Platform Treasury: ${platformTreasury}`)
+    log(`  - Platform Fee: ${platformFeeBps / 100}%`)
     log("----------------------------------------------------")
 }
 
