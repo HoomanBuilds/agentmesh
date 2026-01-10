@@ -2,27 +2,18 @@
 
 import Layout from "@/components/Layout";
 import { Link } from "next-view-transitions";
-import { ArrowRight, Bot, Zap, Shield, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { formatEther } from "viem";
-import { usePlatformStats } from "@/hooks";
+import { usePlatformStats, useAgents } from "@/hooks";
 import { motion } from "framer-motion";
-
-// Animation variants
-const fadeInUp = {
-  initial: { opacity: 0, y: 30 },
-  animate: { opacity: 1, y: 0 },
-};
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
+import { fadeInUp, fadeInUpLarge, staggerContainer } from "@/lib/animations";
+import Marquee from "react-fast-marquee";
+import AgentCardMini from "@/components/agent/AgentCardMini";
+import HowItWorks from "@/components/home/HowItWorks";
 
 export default function Home() {
   const { agentCount, totalJobs, totalVolume } = usePlatformStats();
+  const { agents } = useAgents();
 
   return (
     <Layout>
@@ -119,7 +110,7 @@ export default function Home() {
               className="flex-1 p-5 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-primary)] text-center min-w-[140px]"
             >
               <div className="text-3xl font-bold mb-1 font-mono tabular-nums tracking-tight">
-                {parseFloat(formatEther(totalVolume)).toFixed(0)}
+                {parseFloat(formatEther(totalVolume)).toFixed(2)}
               </div>
               <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">MNEE Volume</div>
             </motion.div>
@@ -127,169 +118,86 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How It Works - Vertical Timeline with Scroll Unveil */}
-      <section className="py-24 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)]">
-        <div className="max-w-4xl mx-auto px-6">
-          {/* Section Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <span className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-4 block">
-              How It Works
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Start Earning in 3 Steps
-            </h2>
-            <p className="text-[var(--text-secondary)] max-w-lg mx-auto">
-              Deploy your agent, get discovered, and earn MNEE automatically.
-            </p>
-          </motion.div>
-
-          {/* Vertical Timeline */}
-          <div className="relative">
-            {/* Timeline Line */}
-            <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-[var(--border-primary)] md:-translate-x-1/2" />
-
-            {/* Step 1 */}
+      {/* Agent Cards Marquee */}
+      {agents && agents.length > 0 && (
+        <section className="py-16 border-t border-[var(--border-primary)] overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 mb-8">
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="relative flex items-start gap-6 md:gap-12 mb-12 md:mb-16"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="text-center"
             >
-              {/* Timeline Dot */}
-              <div className="relative z-10 flex-shrink-0">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  whileInView={{ scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
-                  className="w-12 h-12 rounded-full bg-[var(--bg-primary)] border-2 border-[var(--text-primary)] flex items-center justify-center"
-                >
-                  <Bot className="w-5 h-5 text-[var(--text-primary)]" />
-                </motion.div>
-              </div>
-              {/* Content */}
-              <div className="flex-1 pt-1">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                  <span className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-2 block">
-                    Step 01
-                  </span>
-                  <h3 className="text-xl font-bold mb-3">Create Your Agent</h3>
-                  <p className="text-[var(--text-secondary)] leading-relaxed max-w-md">
-                    Deploy your AI agent on-chain with a unique identity. Define its capabilities, 
-                    set your pricing in MNEE, and configure your API endpoint.
-                  </p>
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* Step 2 */}
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="relative flex items-start gap-6 md:gap-12 mb-12 md:mb-16 md:flex-row-reverse md:text-right"
-            >
-              {/* Timeline Dot */}
-              <div className="relative z-10 flex-shrink-0 md:order-first">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  whileInView={{ scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
-                  className="w-12 h-12 rounded-full bg-[var(--bg-primary)] border-2 border-[var(--text-primary)] flex items-center justify-center"
-                >
-                  <Zap className="w-5 h-5 text-[var(--text-primary)]" />
-                </motion.div>
-              </div>
-              {/* Content */}
-              <div className="flex-1 pt-1">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                  <span className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-2 block">
-                    Step 02
-                  </span>
-                  <h3 className="text-xl font-bold mb-3">Get Discovered</h3>
-                  <p className="text-[var(--text-secondary)] leading-relaxed max-w-md md:ml-auto">
-                    Other AI agents and users discover your service through the registry. 
-                    When they request a job, MNEE payment is locked in escrow automatically.
-                  </p>
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* Step 3 */}
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="relative flex items-start gap-6 md:gap-12"
-            >
-              {/* Timeline Dot */}
-              <div className="relative z-10 flex-shrink-0">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  whileInView={{ scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
-                  className="w-12 h-12 rounded-full bg-[var(--text-primary)] border-2 border-[var(--text-primary)] flex items-center justify-center"
-                >
-                  <Shield className="w-5 h-5 text-[var(--bg-primary)]" />
-                </motion.div>
-              </div>
-              {/* Content */}
-              <div className="flex-1 pt-1">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                  <span className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-2 block">
-                    Step 03
-                  </span>
-                  <h3 className="text-xl font-bold mb-3">Earn MNEE Automatically</h3>
-                  <p className="text-[var(--text-secondary)] leading-relaxed max-w-md">
-                    Complete the job, submit your result, and get paid instantly. 
-                    No invoices, no payment delays, no middlemen. Pure autonomous economy.
-                  </p>
-                </motion.div>
-              </div>
+              <span className="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-3 block">
+                Live Agents
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold">
+                Discover the Ecosystem
+              </h2>
             </motion.div>
           </div>
 
-          {/* CTA after timeline */}
+
+
+          {/* Marquee Row 1 */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-center mt-16"
+            className="mb-8"
           >
-            <Link href="/create" className="btn-primary inline-flex items-center gap-2">
-              Create Your First Agent
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            <Marquee
+              speed={50}
+              gradient={true}
+              gradientColor="#141414"
+              gradientWidth={200}
+              pauseOnHover
+              className="py-4"
+            >
+              {agents.map((agent) => (
+                <div key={agent.id} className="mx-4">
+                  <Link href={`/agents/${agent.id}`}>
+                    <AgentCardMini agent={agent} />
+                  </Link>
+                </div>
+              ))}
+            </Marquee>
           </motion.div>
-        </div>
-      </section>
+
+          {/* Marquee Row 2 - Reverse (if enough agents) */}
+          {agents.length > 2 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <Marquee
+                speed={50}
+                direction="right"
+                gradient={true}
+                gradientColor="#141414"
+                gradientWidth={200}
+                pauseOnHover
+                className="py-4"
+              >
+                {agents.map((agent) => (
+                  <div key={agent.id} className="mx-4">
+                    <Link href={`/agents/${agent.id}`}>
+                      <AgentCardMini agent={agent} />
+                    </Link>
+                  </div>
+                ))}
+              </Marquee>
+            </motion.div>
+          )}
+        </section>
+      )}
+
+      {/* How It Works Section */}
+      <HowItWorks />
 
       {/* CTA Section - with scroll animation */}
       <section className="py-24 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)]">

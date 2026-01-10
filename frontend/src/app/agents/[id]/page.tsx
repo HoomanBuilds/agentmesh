@@ -14,6 +14,7 @@ import { useAgent, useAgentWallet, useAgentTransactions } from "@/hooks";
 import { PageLoader, EmptyState } from "@/components/ui";
 import { AgentWallet, AgentImage, EditAgentModal } from "@/components/agent";
 import { motion, AnimatePresence } from "framer-motion";
+import { getTxExplorerUrl } from "@/lib/contracts";
 
 export default function AgentDetailPage() {
   const params = useParams();
@@ -300,7 +301,7 @@ export default function AgentDetailPage() {
                                   <td className="py-4 px-4">
                                     {tx.txHash ? (
                                       <a 
-                                        href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
+                                        href={getTxExplorerUrl(tx.txHash)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-sm text-[var(--accent-primary)] hover:underline font-mono"

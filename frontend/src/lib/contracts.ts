@@ -1,15 +1,32 @@
 import contractAddresses from "@/constants/contractAddresses.json";
 
-// Get the current chain ID from environment
 export const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID || "11155111";
 
 type ChainId = keyof typeof contractAddresses;
 
-// Default RPC URLs
 const DEFAULT_RPC_URLS: Record<string, string> = {
   "11155111": "https://rpc.sepolia.org", 
   "1": "https://eth.llamarpc.com",         
 };
+
+const EXPLORER_URLS: Record<string, string> = {
+  "11155111": "https://sepolia.etherscan.io",
+  "1": "https://etherscan.io",
+};
+
+/**
+ * Get the block explorer URL for the current chain
+ */
+export function getExplorerUrl(): string {
+  return EXPLORER_URLS[CHAIN_ID] || "https://etherscan.io";
+}
+
+/**
+ * Get the full URL for a transaction on the block explorer
+ */
+export function getTxExplorerUrl(txHash: string): string {
+  return `${getExplorerUrl()}/tx/${txHash}`;
+}
 
 /**
  * Get the RPC URL for the current chain

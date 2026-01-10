@@ -7,19 +7,7 @@ import { useAgents } from "@/hooks/useAgents";
 import { AgentCard } from "@/components/agent";
 import { SectionLoader, EmptyState, PageHeader } from "@/components/ui";
 import { motion } from "framer-motion";
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.08,
-    },
-  },
-};
-
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-};
+import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 export default function AgentsPage() {
   const { agents, loading } = useAgents();

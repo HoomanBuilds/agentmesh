@@ -8,19 +8,8 @@ import { useAgents, useOwnerTransactions } from "@/hooks";
 import { AgentCard } from "@/components/agent";
 import { SectionLoader, EmptyState, PageHeader } from "@/components/ui";
 import { motion } from "framer-motion";
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.08,
-    },
-  },
-};
-
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-};
+import { fadeInUp, staggerContainer } from "@/lib/animations";
+import { getTxExplorerUrl } from "@/lib/contracts";
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount();
@@ -214,7 +203,7 @@ export default function DashboardPage() {
                           <td className="py-4 px-4">
                             {tx.txHash ? (
                               <a 
-                                href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
+                                href={getTxExplorerUrl(tx.txHash)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm text-[var(--accent-primary)] hover:underline font-mono"
