@@ -92,12 +92,9 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
-              <span className="text-black font-bold text-lg">A</span>
-            </div>
-            <span className="font-semibold text-lg hidden sm:block">
-              AgentPay
+          <Link href="/" className="flex items-center">
+            <span className="font-bold text-xl tracking-tight">
+              AgentMesh
             </span>
           </Link>
 

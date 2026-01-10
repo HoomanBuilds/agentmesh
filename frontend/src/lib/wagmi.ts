@@ -19,7 +19,7 @@ const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo";
 const rpcUrl = getRpcUrl();
 
 export const config = getDefaultConfig({
-  appName: "AgentPay Router",
+  appName: "AgentMesh",
   projectId,
   chains: getChains(),
   ssr: true,

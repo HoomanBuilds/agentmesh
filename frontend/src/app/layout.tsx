@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AgentPay Router",
+  title: "AgentMesh",
   description: "Permissionless AI Agent Economy - Create, discover, and pay AI agents autonomously",
 };
 
