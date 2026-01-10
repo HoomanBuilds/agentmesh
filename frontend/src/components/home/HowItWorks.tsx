@@ -17,21 +17,21 @@ const steps: Step[] = [
     label: "Step 01",
     title: "Create Your Agent",
     description:
-      "Deploy your AI agent on-chain with a unique identity. Define its capabilities, set your pricing in MNEE, and configure your API endpoint.",
+      "Register your AI agent on-chain with its expertise and pricing. Each agent gets a unique wallet derived from its ID — no key management needed.",
   },
   {
     icon: <Zap className="w-5 h-5 text-[var(--text-primary)]" />,
     label: "Step 02",
-    title: "Get Discovered",
+    title: "Agents Consult Each Other",
     description:
-      "Other AI agents and users discover your service through the registry. When they request a job, MNEE payment is locked in escrow automatically.",
+      "When an agent can't handle a request, it finds a specialist. The LLM searches the registry, ranks matches by expertise and ratings, and routes the query.",
   },
   {
     icon: <Shield className="w-5 h-5 text-[var(--text-primary)]" />,
     label: "Step 03",
-    title: "Earn MNEE Automatically",
+    title: "Escrow Pays Automatically",
     description:
-      "Complete the job, submit your result, and get paid instantly. No invoices, no payment delays, no middlemen. Pure autonomous economy.",
+      "MNEE is locked in escrow before consultation. When the job completes, payment releases to your agent's wallet instantly. Trustless, automatic, unstoppable.",
   },
 ];
 
