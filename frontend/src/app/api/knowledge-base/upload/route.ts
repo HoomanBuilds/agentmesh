@@ -2,30 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { addToKnowledgeBase } from "@/lib/vectordb";
 import { supabase } from "@/lib/supabase";
 
-/**
- * POST /api/knowledge-base/upload
- * Upload documents to agent's knowledge base
- * 
- * Body: {
- *   agentId: string (UUID),
- *   documents: string[] (text chunks)
- * }
- */
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { agentId, documents } = body;
+    const formData = await req.formData();
+    const agentId = formData.get("agentId") as string;
+    const files = formData.getAll("files") as File[];
 
-    if (!agentId || !documents || !Array.isArray(documents)) {
+    if (!agentId || files.length === 0) {
       return NextResponse.json(
-        { error: "agentId and documents array are required" },
-        { status: 400 }
-      );
-    }
-
-    if (documents.length === 0) {
-      return NextResponse.json(
-        { error: "No documents provided" },
+        { error: "Missing agentId or files" },
         { status: 400 }
       );
     }
@@ -51,27 +36,129 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add documents to knowledge base
+    const documents: string[] = [];
+
+    for (const file of files) {
+      let text = "";
+
+      if (file.type === "application/pdf") {
+        const buffer = Buffer.from(await file.arrayBuffer());
+
+        // @ts-ignore
+        const PDFParser = (await import("pdf2json")).default;
+        const parser = new PDFParser(null, true);
+
+        text = await new Promise((resolve, reject) => {
+          parser.on("pdfParser_dataError", (errData: any) =>
+            reject(new Error(errData.parserError))
+          );
+          parser.on("pdfParser_dataReady", () => {
+            const rawText = parser.getRawTextContent();
+            resolve(rawText);
+          });
+
+          parser.parseBuffer(buffer);
+        });
+      } else if (
+        file.type === "text/plain" ||
+        file.type === "text/markdown" ||
+        file.name.endsWith(".md") ||
+        file.name.endsWith(".txt")
+      ) {
+        text = await file.text();
+      } else {
+        console.warn(`Unsupported file type: ${file.type}`);
+        continue;
+      }
+
+      const chunks = chunkText(text, 1000, 100);
+      documents.push(...chunks);
+    }
+
+    if (documents.length === 0) {
+      return NextResponse.json(
+        { error: "No valid text content found in files" },
+        { status: 400 }
+      );
+    }
+
     const result = await addToKnowledgeBase(agent.onchain_id, documents);
 
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error || "Failed to upload documents" },
+        { error: result.error || "Failed to index documents" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
-      data: {
-        uploaded: documents.length,
-        agentId,
-      },
+      success: true,
+      documentCount: documents.length,
     });
   } catch (error: any) {
-    console.error("Knowledge base upload error:", error);
+    console.error("Error uploading knowledge base:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to upload documents" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
     );
   }
+}
+
+function chunkText(text: string, maxLength: number, overlap: number): string[] {
+  if (!text || text.length === 0) return [];
+  if (text.length <= maxLength) return [text];
+
+  const chunks: string[] = [];
+  let startIndex = 0;
+
+  while (startIndex < text.length) {
+    let endIndex = startIndex + maxLength;
+
+    if (endIndex < text.length) {
+      const searchWindow = text.substring(
+        Math.max(startIndex, endIndex - Math.floor(maxLength * 0.3)),
+        endIndex
+      );
+
+      const sentenceBreak = Math.max(
+        searchWindow.lastIndexOf(". "),
+        searchWindow.lastIndexOf("! "),
+        searchWindow.lastIndexOf("? "),
+        searchWindow.lastIndexOf(".\n"),
+        searchWindow.lastIndexOf("!\n"),
+        searchWindow.lastIndexOf("?\n")
+      );
+
+      if (sentenceBreak !== -1) {
+        endIndex = endIndex - Math.floor(maxLength * 0.3) + sentenceBreak + 1;
+      } else {
+        const otherBreak = Math.max(
+          searchWindow.lastIndexOf("\n"),
+          searchWindow.lastIndexOf(", "),
+          searchWindow.lastIndexOf(" ")
+        );
+
+        if (otherBreak !== -1) {
+          endIndex = endIndex - Math.floor(maxLength * 0.3) + otherBreak + 1;
+        }
+      }
+    }
+
+    if (endIndex <= startIndex) {
+      endIndex = Math.min(startIndex + maxLength, text.length);
+    }
+
+    const chunk = text.substring(startIndex, endIndex).trim();
+    if (chunk.length > 0) {
+      chunks.push(chunk);
+    }
+
+    if (endIndex >= text.length) {
+      break;
+    }
+
+    startIndex = Math.max(startIndex + 1, endIndex - overlap);
+  }
+
+  return chunks;
 }
