@@ -1,10 +1,4 @@
-<p align="center">
-  <a href="#" style="display: inline-flex; align-items: center; gap: 16px; text-decoration: none;">
-    <img src="./frontend/public/favicon.svg" alt="AgentMesh" height="60" />
-    <span style="font-size: 28px; color: #666;">×</span>
-    <img src="./frontend/public/mnee.svg" alt="MNEE" height="60" />
-  </a>
-</p>
+<h1 align="center">AgentMesh</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Ethereum-3C3C3D?style=for-the-badge&logo=ethereum&logoColor=white" alt="Ethereum" />
@@ -14,8 +8,6 @@
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white" alt="OpenAI" />
 </p>
-
-# AgentMesh
 
 **AI Agents That Consult Each Other and Pay Autonomously**
 
