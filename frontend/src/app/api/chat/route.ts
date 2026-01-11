@@ -313,6 +313,41 @@ async function handleConfirmedRouting(
 
   const targetPrice = BigInt(targetAgent.price_per_call);
   const targetPriceEth = ethers.formatEther(targetPrice);
+  
+  // Helper to record failed/stuck job in Supabase
+  const recordFailedJob = async (jobId: string | null, errorMessage: string, status: "failed" | "stuck") => {
+    try {
+      const { getAgentWalletAddress } = await import("@/lib/agent-wallet");
+      const callerWalletAddress = getAgentWalletAddress(callerAgent.onchain_id);
+      
+      const jobData = {
+        job_id: jobId || `failed_${Date.now()}`,
+        caller_agent_id: callerAgent.id,
+        provider_agent_id: targetAgent.id,
+        caller_onchain_id: callerAgent.onchain_id,
+        provider_onchain_id: targetAgent.onchain_id,
+        user_address: userAddress,
+        caller_address: callerWalletAddress,
+        amount: targetPriceEth,
+        input: JSON.stringify({ message: originalMessage }),
+        status,
+        error_message: errorMessage,
+      };
+      
+      // If job exists, update it; otherwise insert
+      if (jobId) {
+        const { error: upsertError } = await supabase
+          .from("jobs")
+          .upsert(jobData, { onConflict: "job_id" });
+        if (upsertError) console.error("[ERROR] Failed to upsert failed job:", upsertError);
+      } else {
+        const { error: insertError } = await supabase.from("jobs").insert(jobData);
+        if (insertError) console.error("[ERROR] Failed to insert failed job:", insertError);
+      }
+    } catch (e) {
+      console.error("[ERROR] Exception recording failed job:", e);
+    }
+  };
 
   try {
     const { requestAgentService, confirmAgentJob, getAgentMneeBalance, getAgentEthBalance } = await import("@/lib/agent-wallet");
@@ -323,6 +358,7 @@ async function handleConfirmedRouting(
     console.log(`[BALANCE CHECK] Agent ${callerAgent.name}: MNEE=${mneeBalance}, ETH=${ethBalance}, Required=${targetPriceEth}`);
     
     if (parseFloat(mneeBalance) < parseFloat(targetPriceEth)) {
+      await recordFailedJob(null, `Insufficient MNEE: ${mneeBalance} < ${targetPriceEth}`, "failed");
       return NextResponse.json({
         response: `❌ Insufficient MNEE balance. You have ${parseFloat(mneeBalance).toFixed(4)} MNEE but need ${targetPriceEth} MNEE. Please fund your agent wallet.`,
         agentId: callerAgent.id,
@@ -338,6 +374,7 @@ async function handleConfirmedRouting(
     
     const MIN_ETH_FOR_GAS = 0.001;
     if (parseFloat(ethBalance) < MIN_ETH_FOR_GAS) {
+      await recordFailedJob(null, `Insufficient ETH for gas: ${ethBalance} < ${MIN_ETH_FOR_GAS}`, "failed");
       return NextResponse.json({
         response: `❌ Insufficient ETH for gas fees. You have ${parseFloat(ethBalance).toFixed(6)} ETH but need at least ${MIN_ETH_FOR_GAS} ETH. Please send some ETH to your agent wallet.`,
         agentId: callerAgent.id,
@@ -360,6 +397,7 @@ async function handleConfirmedRouting(
     );
 
     if ("error" in serviceResult) {
+      await recordFailedJob(null, `Service request failed: ${serviceResult.error}`, "failed");
       return NextResponse.json({
         response: `❌ Failed to initiate payment: ${serviceResult.error}`,
         agentId: callerAgent.id,
@@ -371,15 +409,29 @@ async function handleConfirmedRouting(
     console.log(`Job created: ${serviceResult.jobId}`);
 
     // Step 2: Execute the target agent
-    const targetResponse = await generateText({
-      model: openai("gpt-4o-mini"),
-      system: targetAgent.system_prompt,
-      prompt: originalMessage,
-    });
+    let targetResponse;
+    try {
+      targetResponse = await generateText({
+        model: openai("gpt-4o-mini"),
+        system: targetAgent.system_prompt,
+        prompt: originalMessage,
+      });
+    } catch (aiError: any) {
+      // Job is now STUCK - payment locked but AI execution failed
+      await recordFailedJob(serviceResult.jobId, `AI execution failed: ${aiError.message}`, "stuck");
+      return NextResponse.json({
+        response: `❌ Job stuck: AI execution failed after payment was locked. JobId: ${serviceResult.jobId}. Error: ${aiError.message}`,
+        agentId: callerAgent.id,
+        sessionId,
+        routing: { wasRouted: false, error: aiError.message, stuckJobId: serviceResult.jobId },
+      });
+    }
 
     // Step 3: Confirm job (releases payment to provider)
     const confirmResult = await confirmAgentJob(callerAgent.onchain_id, serviceResult.jobId);
     if ("error" in confirmResult) {
+      // Job is STUCK executed but confirmation failed
+      await recordFailedJob(serviceResult.jobId, `Job confirmation failed: ${confirmResult.error}`, "stuck");
       console.error("Failed to confirm job:", confirmResult.error);
     } else {
       console.log(`Job confirmed, payment released: ${confirmResult.hash}`);
@@ -404,7 +456,7 @@ Present this information naturally, acknowledging the consultation.`,
       console.warn("Failed to store messages:", storeError);
     }
 
-    // Record job in Supabase for payment history
+    // Record successful job in Supabase
     try {
       const { getAgentWalletAddress } = await import("@/lib/agent-wallet");
       const callerWalletAddress = getAgentWalletAddress(callerAgent.onchain_id);
@@ -464,6 +516,7 @@ Present this information naturally, acknowledging the consultation.`,
     });
   } catch (error: any) {
     console.error("Routing error:", error);
+    await recordFailedJob(null, `Unexpected error: ${error.message}`, "failed");
     return NextResponse.json({
       response: `❌ An error occurred while consulting the specialist: ${error.message}`,
       agentId: callerAgent.id,

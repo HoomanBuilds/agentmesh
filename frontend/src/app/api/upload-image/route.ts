@@ -65,23 +65,27 @@ export async function POST(request: NextRequest) {
 
     const imageUrl = urlData.publicUrl;
 
-    // Update agent's image_url in database
-    const { error: updateError } = await supabase
-      .from("agents")
-      .update({ image_url: imageUrl })
-      .eq("id", agentId);
+    const isTempId = agentId.startsWith("temp-");
+    
+    if (!isTempId) {
+      const { error: updateError } = await supabase
+        .from("agents")
+        .update({ image_url: imageUrl })
+        .eq("id", agentId);
 
-    if (updateError) {
-      console.error("Update error:", updateError);
-      return NextResponse.json(
-        { error: `Failed to update agent: ${updateError.message}` },
-        { status: 500 }
-      );
+      if (updateError) {
+        console.error("Update error:", updateError);
+        return NextResponse.json(
+          { error: `Failed to update agent: ${updateError.message}` },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json({
       success: true,
       imageUrl,
+      url: imageUrl, // Also include as 'url' for compatibility
     });
   } catch (error) {
     console.error("Upload error:", error);

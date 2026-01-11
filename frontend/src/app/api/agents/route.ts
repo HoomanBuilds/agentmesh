@@ -58,10 +58,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/agents - Create a new agent
+// POST /api/agents - Create a new agent (ONLY after on-chain registration confirmed)
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateAgentInput = await request.json();
+    const body: CreateAgentInput & { onchain_id?: number; image_url?: string } = await request.json();
 
     // Validate required fields
     if (!body.name || !body.system_prompt || !body.price_per_call || !body.owner_address) {
@@ -71,7 +71,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert into Supabase
+    if (body.onchain_id === undefined || body.onchain_id === null) {
+      return NextResponse.json(
+        { error: "onchain_id is required. Register agent on-chain first, then create in database." },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await supabase
       .from("agents")
       .insert({
@@ -82,6 +88,8 @@ export async function POST(request: NextRequest) {
         input_schema: body.input_schema || {},
         output_schema: body.output_schema || {},
         owner_address: body.owner_address.toLowerCase(),
+        onchain_id: body.onchain_id,
+        image_url: body.image_url || null,
         active: true,
       })
       .select()

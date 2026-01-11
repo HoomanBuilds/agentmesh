@@ -95,7 +95,12 @@ export default function Home() {
       </section>
 
       {/* Agent Cards Marquee */}
-      {agents && agents.length > 0 && (
+      {agents && agents.length > 0 && (() => {
+        const minCards = 6;
+        const repeatCount = Math.max(1, Math.ceil(minCards / agents.length));
+        const marqueeAgents = Array(repeatCount).fill(agents).flat();
+        
+        return (
         <section className="py-16 border-t border-[var(--border-primary)] overflow-hidden">
           <div className="max-w-7xl mx-auto px-6 mb-8">
             <motion.div
@@ -114,8 +119,6 @@ export default function Home() {
             </motion.div>
           </div>
 
-
-
           {/* Marquee Row 1 */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -132,8 +135,8 @@ export default function Home() {
               pauseOnHover
               className="py-4"
             >
-              {agents.map((agent) => (
-                <div key={agent.id} className="mx-4">
+              {marqueeAgents.map((agent, index) => (
+                <div key={`row1-${agent.id}-${index}`} className="mx-4">
                   <Link href={`/agents/${agent.id}`}>
                     <AgentCardMini agent={agent} />
                   </Link>
@@ -142,35 +145,34 @@ export default function Home() {
             </Marquee>
           </motion.div>
 
-          {/* Marquee Row 2 - Reverse (if enough agents) */}
-          {agents.length > 2 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.3 }}
+          {/* Marquee Row 2 - Reverse */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <Marquee
+              speed={50}
+              direction="right"
+              gradient={true}
+              gradientColor="#141414"
+              gradientWidth={200}
+              pauseOnHover
+              className="py-4"
             >
-              <Marquee
-                speed={50}
-                direction="right"
-                gradient={true}
-                gradientColor="#141414"
-                gradientWidth={200}
-                pauseOnHover
-                className="py-4"
-              >
-                {agents.map((agent) => (
-                  <div key={agent.id} className="mx-4">
-                    <Link href={`/agents/${agent.id}`}>
-                      <AgentCardMini agent={agent} />
-                    </Link>
-                  </div>
-                ))}
-              </Marquee>
-            </motion.div>
-          )}
+              {marqueeAgents.map((agent, index) => (
+                <div key={`row2-${agent.id}-${index}`} className="mx-4">
+                  <Link href={`/agents/${agent.id}`}>
+                    <AgentCardMini agent={agent} />
+                  </Link>
+                </div>
+              ))}
+            </Marquee>
+          </motion.div>
         </section>
-      )}
+        );
+      })()}
 
       {/* How It Works Section */}
       <HowItWorks />

@@ -62,6 +62,16 @@ export default function CreatePage() {
     }
   };
 
+  // Store form data for after on-chain confirmation
+  const [pendingFormData, setPendingFormData] = useState<{
+    name: string;
+    description: string;
+    system_prompt: string;
+    price: string;
+    imageFile: File;
+    walletAddress: string;
+  } | null>(null);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isConnected || !address) return;
@@ -74,44 +84,11 @@ export default function CreatePage() {
     setError("");
 
     try {
-      const res = await fetch("/api/agents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          description: form.description,
-          system_prompt: form.system_prompt,
-          price_per_call: (parseFloat(form.price) * 1e18).toString(),
-          owner_address: address,
-        }),
-      });
-
-      const { data, error: apiError } = await res.json();
-
-      if (apiError) {
-        setError(apiError);
-        return;
-      }
-
-      setAgentUuid(data.id);
-      
-      setStep("uploading_image");
-      const formData = new FormData();
-      formData.append("file", imageFile);
-      formData.append("agentId", data.id);
-
-      const uploadRes = await fetch("/api/upload-image", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!uploadRes.ok) {
-        console.error("Failed to upload image");
-      }
-
+      // Step 1: Get the next agent ID (for wallet derivation)
       const { data: currentCount } = await refetchCount();
       const nextAgentId = Number(currentCount || 0);
       
+      // Step 2: Get the agent wallet address
       const walletRes = await fetch(`/api/agent-wallet/info?agentId=${nextAgentId}`);
       const { data: walletData } = await walletRes.json();
       
@@ -120,54 +97,99 @@ export default function CreatePage() {
         return;
       }
       
+      // Step 3: Store form data for after on-chain confirmation
+      setPendingFormData({
+        name: form.name,
+        description: form.description,
+        system_prompt: form.system_prompt,
+        price: form.price,
+        imageFile: imageFile,
+        walletAddress: walletData.address,
+      });
+      
+      // Step 4: Register on-chain
       setStep("confirm");
-      register(form.price, data.id, walletData.address);
+      register(form.price, `agent-${nextAgentId}`, walletData.address);
     } catch (err) {
-      console.error("Error creating agent:", err);
-      setError("Failed to create agent");
+      console.error("Error preparing agent registration:", err);
+      setError("Failed to prepare agent registration");
       setStep("form");
     }
   }
 
+  // Handle successful on-chain registration
   useEffect(() => {
-    async function updateOnchainId() {
-      if (registerStatus === "success" && step === "confirm" && agentUuid && address) {
+    async function saveAgentToDatabase() {
+      if (registerStatus === "success" && step === "confirm" && pendingFormData && address) {
         setStep("updating");
         
         try {
           const { data: newCount } = await refetchCount();
-          const onchainId = Number(newCount) - 1; 
+          const onchainId = Number(newCount) - 1;
           
-          const res = await fetch(`/api/agents/${agentUuid}`, {
-            method: "PATCH",
+          // Step 5: Upload image FIRST
+          setStep("uploading_image");
+          const formData = new FormData();
+          formData.append("file", pendingFormData.imageFile);
+          formData.append("agentId", `temp-${Date.now()}`); 
+
+          const uploadRes = await fetch("/api/upload-image", {
+            method: "POST",
+            body: formData,
+          });
+
+          let imageUrl = null;
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            imageUrl = uploadData.data?.url || uploadData.url;
+          }
+          
+          // Step 6: save to Supabase
+          setStep("updating");
+          const res = await fetch("/api/agents", {
+            method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
+              name: pendingFormData.name,
+              description: pendingFormData.description,
+              system_prompt: pendingFormData.system_prompt,
+              price_per_call: (parseFloat(pendingFormData.price) * 1e18).toString(),
+              owner_address: address,
               onchain_id: onchainId,
-              ownerAddress: address  
+              image_url: imageUrl,
             }),
           });
 
-          if (!res.ok) {
-            console.error("Failed to update onchain_id in Supabase");
+          const { data, error: apiError } = await res.json();
+
+          if (apiError) {
+            setError(apiError);
+            setStep("form");
+            return;
           }
 
+          setAgentUuid(data.id);
+
+          // Step 7: Upload knowledge base if any
           if (kbFiles.length > 0) {
             setStep("uploading_kb");
-            const result = await uploadKnowledgeBase(agentUuid, kbFiles);
+            const result = await uploadKnowledgeBase(data.id, kbFiles);
             if (!result.success) {
               console.error("KB upload failed:", result.error);
             }
           }
 
           setStep("done");
+          setPendingFormData(null);
         } catch (err) {
-          console.error("Error updating onchain_id:", err);
-          setStep("done");
+          console.error("Error saving agent:", err);
+          setError("Agent registered on-chain but failed to save to database. Please contact support.");
+          setStep("form");
         }
       }
     }
-    updateOnchainId();
-  }, [registerStatus, step, agentUuid, refetchCount, address, kbFiles]);
+    saveAgentToDatabase();
+  }, [registerStatus, step, pendingFormData, refetchCount, address, kbFiles]);
 
   useEffect(() => {
     if (registerError) {
