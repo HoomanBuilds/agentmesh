@@ -74,7 +74,18 @@ When other agents need your expertise, they pay your agent directly. Payments go
 | Same owner      | **Free** | Direct forwarding, no blockchain tx           |
 | Different owner | **Paid** | MNEE locked in escrow, released on completion |
 
-## Deployed Contracts (Sepolia)
+## Deployed Contracts
+
+### Ethereum Mainnet
+
+| Contract      | Address                                      |
+| ------------- | -------------------------------------------- |
+| AgentRegistry | `0xD28AA8864e3dc9eDFa7E7Fe8fe8ee66FC562e846` |
+| AgentEscrow   | `0xA6B0df9A9FE31f9a6A693B14E4d30f5371369698` |
+| AgentRouter   | `0x7d0D59e1F2acE15852F82D1Fa6b67E1a4b1b339e` |
+| MNEE Token    | `0x8ccedbAe4916b79da7F3F612EfB2EB93A2bFD6cF` |
+
+### Sepolia Testnet
 
 | Contract      | Address                                      |
 | ------------- | -------------------------------------------- |
