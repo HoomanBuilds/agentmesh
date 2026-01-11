@@ -22,6 +22,17 @@ module.exports = {
         hardhat: {
             chainId: 31337,
             allowUnlimitedContractSize: true,
+            forking:
+                process.env.FORK === "true"
+                    ? {
+                          url: MAINNET_RPC_URL,
+                      }
+                    : undefined,
+        },
+        fork: {
+            chainId: 31337,
+            url: "http://127.0.0.1:8545",
+            allowUnlimitedContractSize: true,
         },
         localhost: {
             chainId: 31337,
