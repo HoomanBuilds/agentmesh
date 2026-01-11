@@ -108,6 +108,30 @@ contract AgentEscrow is IAgentEscrow, Ownable, ReentrancyGuard {
         platformFeeBps = _feeBps;
     }
 
+    /**
+     * @notice Emergency withdraw for stuck tokens (only owner)
+     * @dev Use this to recover tokens that are stuck due to failed transfers or sent accidentally
+     * @param token Token address to withdraw (use address(0) for native ETH)
+     * @param to Address to send the tokens to
+     * @param amount Amount to withdraw
+     */
+    function emergencyWithdraw(
+        address token,
+        address to,
+        uint256 amount
+    ) external onlyOwner nonReentrant {
+        if (to == address(0)) revert InvalidTreasury();
+        
+        if (token == address(0)) {
+            (bool success, ) = payable(to).call{value: amount}("");
+            require(success, "ETH transfer failed");
+        } else {
+            IERC20(token).safeTransfer(to, amount);
+        }
+        
+        emit EmergencyWithdraw(token, to, amount);
+    }
+
     // ============ Job Management (Called by Router) ============
 
     /**
@@ -172,6 +196,46 @@ contract AgentEscrow is IAgentEscrow, Ownable, ReentrancyGuard {
         job.status = JobStatus.Completed;
 
         // Calculate platform fee
+        uint256 platformFee = (job.amount * platformFeeBps) / 10000;
+        uint256 providerAmount = job.amount - platformFee;
+
+        // Transfer platform fee to treasury
+        if (platformFee > 0 && platformTreasury != address(0)) {
+            mneeToken.safeTransfer(platformTreasury, platformFee);
+            totalPlatformFees += platformFee;
+            emit PlatformFeeCollected(jobId, platformFee);
+        } else {
+            providerAmount = job.amount;
+        }
+
+        // Release remaining MNEE to provider
+        mneeToken.safeTransfer(providerOwner, providerAmount);
+
+        emit JobCompleted(jobId, providerAmount);
+        
+        // Update stats
+        totalJobsCompleted++;
+        pendingJobsCount--;
+    }
+
+    /**
+     * @notice Emergency complete job - owner can manually complete stuck jobs
+     * @dev Use this when a job is stuck in Pending status and needs manual completion
+     * @param jobId ID of the stuck job
+     * @param providerOwner Address to receive the provider's funds
+     */
+    function emergencyCompleteJob(
+        bytes32 jobId,
+        address providerOwner
+    ) external onlyOwner nonReentrant {
+        Job storage job = _jobs[jobId];
+
+        if (job.callerWallet == address(0)) revert JobNotFound();
+        if (job.status != JobStatus.Pending) revert JobNotPending();
+
+        job.status = JobStatus.Completed;
+
+        // Calculate platform fee (same as normal completeJob)
         uint256 platformFee = (job.amount * platformFeeBps) / 10000;
         uint256 providerAmount = job.amount - platformFee;
 

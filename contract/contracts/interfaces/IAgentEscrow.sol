@@ -34,6 +34,7 @@ interface IAgentEscrow {
     event JobDisputed(bytes32 indexed jobId, uint256 amount);
     event JobExpired(bytes32 indexed jobId, uint256 amount);
     event PlatformFeeCollected(bytes32 indexed jobId, uint256 fee);
+    event EmergencyWithdraw(address indexed token, address indexed to, uint256 amount);
 
     function createJob(
         uint256 callerAgentId,
