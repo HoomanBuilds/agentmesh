@@ -41,10 +41,15 @@ CREATE TABLE jobs (
   input TEXT,                            -- User's message
   output TEXT,                           -- Agent's response
   
-  -- Status
-  status TEXT DEFAULT 'pending',         -- pending, completed, failed
+  -- Status tracking
+  status TEXT DEFAULT 'pending',         -- pending, completed, failed, stuck, expired
+  error_message TEXT,                    -- Error details if failed/stuck
+  retry_count INTEGER DEFAULT 0,         -- Number of retry attempts
+  
+  -- Timestamps
   created_at TIMESTAMPTZ DEFAULT now(),
-  completed_at TIMESTAMPTZ
+  completed_at TIMESTAMPTZ,
+  expired_at TIMESTAMPTZ                 -- When job timed out (if applicable)
 );
 
 -- Agent ratings table (user ratings after routing)
@@ -67,6 +72,7 @@ CREATE INDEX idx_jobs_provider ON jobs(provider_agent_id);
 CREATE INDEX idx_jobs_caller ON jobs(caller_agent_id);
 CREATE INDEX idx_jobs_user ON jobs(user_address);
 CREATE INDEX idx_jobs_created ON jobs(created_at DESC);
+CREATE INDEX idx_jobs_status ON jobs(status);              
 CREATE INDEX idx_ratings_agent ON agent_ratings(agent_id);
 
 -- Enable Row Level Security (optional but recommended)
