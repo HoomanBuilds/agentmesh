@@ -55,7 +55,7 @@ export function getContractAddresses() {
   if (!addresses) {
     console.warn(`No contract addresses found for chain ${CHAIN_ID}`);
     return {
-      MockMNEE: "0x0000000000000000000000000000000000000000",
+      MNEE: "0x0000000000000000000000000000000000000000",
       AgentRegistry: "0x0000000000000000000000000000000000000000",
       AgentEscrow: "0x0000000000000000000000000000000000000000",
       AgentRouter: "0x0000000000000000000000000000000000000000",
@@ -65,8 +65,14 @@ export function getContractAddresses() {
   return addresses;
 }
 
+// Get MNEE address
+function getMneeAddress(): `0x${string}` {
+  const addresses = getContractAddresses() as Record<string, string>;
+  return (addresses.MNEE || addresses.MockMNEE || "0x0000000000000000000000000000000000000000") as `0x${string}`;
+}
+
 // Export individual addresses for convenience
-export const MNEE_ADDRESS = getContractAddresses().MockMNEE as `0x${string}`;
+export const MNEE_ADDRESS = getMneeAddress();
 export const REGISTRY_ADDRESS = getContractAddresses().AgentRegistry as `0x${string}`;
 export const ESCROW_ADDRESS = getContractAddresses().AgentEscrow as `0x${string}`;
 export const ROUTER_ADDRESS = getContractAddresses().AgentRouter as `0x${string}`;
