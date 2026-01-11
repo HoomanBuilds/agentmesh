@@ -44,7 +44,7 @@ const contracts = [
   {
     name: "MNEE Token",
     address: MNEE_ADDRESS,
-    description: "ERC-20 token used for all agent payments. Mock token on testnet.",
+    description: "ERC-20 token used for all agent payments on Ethereum mainnet.",
     functions: ["transfer()", "approve()", "balanceOf()"],
   },
 ];
@@ -179,6 +179,114 @@ export default function DocsPage() {
         </div>
       </section>
 
+      {/* System Architecture */}
+      <section className="py-16 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+        <div className="max-w-4xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-2xl font-bold mb-8 flex items-center gap-3">
+              <Code className="w-6 h-6" />
+              System Architecture
+            </h2>
+            
+            {/* Architecture Diagram */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {/* Frontend */}
+              <div className="p-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-primary)]">
+                <div className="text-xs font-mono text-[var(--text-muted)] mb-2">FRONTEND</div>
+                <h3 className="font-bold text-lg mb-3">Next.js App</h3>
+                <ul className="text-sm text-[var(--text-secondary)] space-y-1">
+                  <li>• Create Agent UI</li>
+                  <li>• Chat Interface</li>
+                  <li>• Dashboard</li>
+                  <li>• Wallet Connect</li>
+                </ul>
+              </div>
+              
+              {/* API */}
+              <div className="p-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-primary)]">
+                <div className="text-xs font-mono text-[var(--text-muted)] mb-2">BACKEND</div>
+                <h3 className="font-bold text-lg mb-3">API Routes</h3>
+                <ul className="text-sm text-[var(--text-secondary)] space-y-1">
+                  <li>• Agent CRUD</li>
+                  <li>• Chat Handler</li>
+                  <li>• LLM Routing</li>
+                  <li>• Wallet Derivation</li>
+                </ul>
+              </div>
+              
+              {/* Database */}
+              <div className="p-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-primary)]">
+                <div className="text-xs font-mono text-[var(--text-muted)] mb-2">DATABASE</div>
+                <h3 className="font-bold text-lg mb-3">Supabase</h3>
+                <ul className="text-sm text-[var(--text-secondary)] space-y-1">
+                  <li>• Agent Metadata</li>
+                  <li>• Job History</li>
+                  <li>• Agent Ratings</li>
+                  <li>• Image Storage</li>
+                </ul>
+              </div>
+            </div>
+            
+            {/* Arrow Row */}
+            <div className="flex justify-center mb-8">
+              <div className="flex items-center gap-4 text-[var(--text-muted)]">
+                <span className="text-2xl">↓</span>
+                <span className="text-sm font-mono">Blockchain + LLM</span>
+                <span className="text-2xl">↓</span>
+              </div>
+            </div>
+            
+            {/* Bottom Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Smart Contracts */}
+              <div className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/30">
+                <div className="text-xs font-mono text-blue-400 mb-2">ETHEREUM MAINNET</div>
+                <h3 className="font-bold text-lg mb-3">Smart Contracts</h3>
+                <ul className="text-sm text-[var(--text-secondary)] space-y-1">
+                  <li>• <span className="font-mono text-xs">AgentRegistry</span> — Registration & pricing</li>
+                  <li>• <span className="font-mono text-xs">AgentEscrow</span> — Payment locking</li>
+                  <li>• <span className="font-mono text-xs">AgentRouter</span> — Coordination</li>
+                  <li>• <span className="font-mono text-xs">MNEE Token</span> — Payment currency</li>
+                </ul>
+              </div>
+              
+              {/* LLM */}
+              <div className="p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/30">
+                <div className="text-xs font-mono text-green-400 mb-2">AI LAYER</div>
+                <h3 className="font-bold text-lg mb-3">LLM Provider</h3>
+                <ul className="text-sm text-[var(--text-secondary)] space-y-1">
+                  <li>• OpenAI GPT-4o-mini</li>
+                  <li>• Routing decisions</li>
+                  <li>• Agent execution</li>
+                  <li>• Response framing</li>
+                </ul>
+              </div>
+            </div>
+            
+            {/* Data Flow */}
+            <div className="mt-8 p-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-primary)]">
+              <h4 className="font-semibold mb-3">Data Flow</h4>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--text-muted)]">
+                <span className="px-2 py-1 bg-[var(--bg-secondary)] rounded font-mono">User Chat</span>
+                <span>→</span>
+                <span className="px-2 py-1 bg-[var(--bg-secondary)] rounded font-mono">LLM Routing</span>
+                <span>→</span>
+                <span className="px-2 py-1 bg-[var(--bg-secondary)] rounded font-mono">Lock MNEE</span>
+                <span>→</span>
+                <span className="px-2 py-1 bg-[var(--bg-secondary)] rounded font-mono">Execute Agent</span>
+                <span>→</span>
+                <span className="px-2 py-1 bg-[var(--bg-secondary)] rounded font-mono">Release Payment</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Payment Flow */}
       <section className="py-16 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]">
         <div className="max-w-4xl mx-auto px-6">
@@ -238,7 +346,7 @@ export default function DocsPage() {
               Smart Contracts
             </h2>
             <p className="text-sm text-[var(--text-muted)] mb-8">
-              Deployed on Ethereum Sepolia Testnet (Chain ID: 11155111)
+              Deployed on Ethereum Mainnet (Chain ID: 1)
             </p>
             <div className="space-y-4">
               {contracts.map((contract, index) => (
