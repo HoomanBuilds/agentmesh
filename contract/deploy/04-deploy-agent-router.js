@@ -1,9 +1,13 @@
 const { network, ethers } = require("hardhat")
 
+// Real MNEE token address on Ethereum Mainnet
+const MAINNET_MNEE_ADDRESS = "0x8ccedbAe4916b79da7F3F612EfB2EB93A2bFD6cF"
+
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log, get, execute } = deployments
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
+    const isFork = process.env.FORK === "true"
 
     log("----------------------------------------------------")
     log("Deploying AgentRouter...")
@@ -13,11 +17,12 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const agentEscrow = await get("AgentEscrow")
 
     let mneeAddress
-    if (chainId === 31337 || chainId === 11155111) {
+    if (chainId === 1 || isFork) {
+        // Mainnet or mainnet fork - use real MNEE
+        mneeAddress = MAINNET_MNEE_ADDRESS
+    } else if (chainId === 31337 || chainId === 11155111) {
         const mockMNEE = await get("MockMNEE")
         mneeAddress = mockMNEE.address
-    } else if (chainId === 1) {
-        mneeAddress = "0x8ccedbAe4916b79da7F3F612EfB2EB93A2bFD6cF"
     }
 
     const agentRouter = await deploy("AgentRouter", {

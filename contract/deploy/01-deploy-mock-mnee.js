@@ -1,14 +1,23 @@
 const { network } = require("hardhat")
 
+// Real MNEE token address on Ethereum Mainnet
+const MAINNET_MNEE_ADDRESS = "0x8ccedbAe4916b79da7F3F612EfB2EB93A2bFD6cF"
+
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
+    const isFork = process.env.FORK === "true"
 
-    if (chainId === 1) {
+    // Skip MockMNEE on mainnet or mainnet fork
+    if (chainId === 1 || isFork) {
         log("----------------------------------------------------")
-        log("Skipping MockMNEE on mainnet - using real MNEE token")
-        log("  Real MNEE: 0x8ccedbAe4916b79da7F3F612EfB2EB93A2bFD6cF")
+        log(
+            isFork
+                ? "Mainnet Fork detected - using real MNEE token"
+                : "Mainnet - using real MNEE token",
+        )
+        log(`  Real MNEE: ${MAINNET_MNEE_ADDRESS}`)
         log("----------------------------------------------------")
         return
     }
