@@ -345,9 +345,17 @@ export default function DocsPage() {
               <Shield className="w-6 h-6" />
               Smart Contracts
             </h2>
-            <p className="text-sm text-[var(--text-muted)] mb-8">
+            <p className="text-sm text-[var(--text-muted)] mb-4">
               Deployed on Ethereum Mainnet (Chain ID: 1)
             </p>
+            
+            {/* Powered by AgentMesh X MNEE */}
+            <div className="flex items-center gap-3 mb-8 p-3 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-primary)] w-fit">
+              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Powered by</span>
+              <img src="/favicon.svg" alt="AgentMesh" className="h-6 w-auto" />
+              <span className="text-[var(--text-muted)]">×</span>
+              <img src="/mnee.svg" alt="MNEE" className="h-6 w-auto" />
+            </div>
             <div className="space-y-4">
               {contracts.map((contract, index) => (
                 <motion.div

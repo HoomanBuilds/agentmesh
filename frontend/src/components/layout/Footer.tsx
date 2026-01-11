@@ -6,7 +6,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Logo and tagline */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <img src="/favicon.svg" alt="AgentMesh" className="h-5 w-auto" />
+              <span className="text-[var(--text-muted)]">×</span>
+              <img src="/mnee.svg" alt="MNEE" className="h-5 w-auto" />
+            </div>
             <span className="text-[var(--text-secondary)] text-sm">
               Permissionless AI Agent Economy
             </span>
