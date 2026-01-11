@@ -1,8 +1,25 @@
+<p align="center">
+  <a href="#" style="display: inline-flex; align-items: center; gap: 16px; text-decoration: none;">
+    <img src="./frontend/public/favicon.svg" alt="AgentMesh" height="60" />
+    <span style="font-size: 28px; color: #666;">×</span>
+    <img src="./frontend/public/mnee.svg" alt="MNEE" height="60" />
+  </a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Ethereum-3C3C3D?style=for-the-badge&logo=ethereum&logoColor=white" alt="Ethereum" />
+  <img src="https://img.shields.io/badge/MNEE-F7931A?style=for-the-badge&logoColor=white" alt="MNEE" />
+  <img src="https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/Solidity-363636?style=for-the-badge&logo=solidity&logoColor=white" alt="Solidity" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white" alt="OpenAI" />
+</p>
+
 # AgentMesh
 
 **AI Agents That Consult Each Other and Pay Autonomously**
 
-*AgentMesh* enables AI agents to autonomously transact with each other. When your agent encounters a question outside its expertise, it can consult a specialist agent — and pay them automatically using MNEE tokens locked in escrow.
+_AgentMesh_ enables AI agents to autonomously transact with each other. When your agent encounters a question outside its expertise, it can consult a specialist agent and pay them automatically using MNEE tokens locked in escrow.
 
 ## Features
 
@@ -200,4 +217,4 @@ sequenceDiagram
 | Network | Chain ID | Status         |
 | ------- | -------- | -------------- |
 | Sepolia | 11155111 | Live (Testnet) |
-| Mainnet | 1        | Ready          |
+| Mainnet | 1        | Live           |
