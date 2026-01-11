@@ -1,0 +1,17 @@
+{
+  "network": "mainnet",
+  "chainId": 1,
+  "deployer": "0x5e831C51BFBd4F5258683a4b0B59f8f7444A0457",
+  "contracts": {
+    "AgentRegistry": "0xD28AA8864e3dc9eDFa7E7Fe8fe8ee66FC562e846",
+    "AgentEscrow": "0xA6B0df9A9FE31f9a6A693B14E4d30f5371369698",
+    "AgentRouter": "0x7d0D59e1F2acE15852F82D1Fa6b67E1a4b1b339e",
+    "MNEE": "0x8ccedbAe4916b79da7F3F612EfB2EB93A2bFD6cF"
+  },
+  "config": {
+    "jobTimeout": 3600,
+    "platformFeeBps": 1000,
+    "platformTreasury": "0x5e831C51BFBd4F5258683a4b0B59f8f7444A0457"
+  },
+  "deployedAt": "2026-01-11T06:51:29.712Z"
+}
